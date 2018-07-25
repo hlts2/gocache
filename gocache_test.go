@@ -177,3 +177,36 @@ func TestGetExpire(t *testing.T) {
 		}
 	}
 }
+
+func TestDelete(t *testing.T) {
+	tests := []struct {
+		key      interface{}
+		val      interface{}
+		expected bool
+	}{
+		{
+			key:      "key-1",
+			val:      "key-1_value",
+			expected: true,
+		},
+	}
+
+	g := New()
+
+	for i, test := range tests {
+		ok := g.Set(test.key, test.val)
+		if !ok {
+			t.Errorf("tests[%d] - Set ok is wrong. expected: %v, got: %v", i, true, ok)
+		}
+
+		ok = g.Delete(test.key)
+		if !ok {
+			t.Errorf("tests[%d] - Delete ok is wrong. expected: %v, got: %v", i, true, ok)
+		}
+
+		_, ok = g.Get(test.key)
+		if ok {
+			t.Errorf("tests[%d] - Set ok is wrong. expected: %v, got: %v", i, false, ok)
+		}
+	}
+}
