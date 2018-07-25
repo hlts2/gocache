@@ -32,11 +32,17 @@ type (
 
 // New returns Gocache (*gocache) instance
 func New() Gocache {
-	return &gocache{
+	g := &gocache{
 		lf:     lockfree.New(),
 		m:      make(map[interface{}]*value),
 		expire: time.Second * 50,
 	}
+
+	return g
+}
+
+func (g *value) isValid() bool {
+	return time.Now().UnixNano() > g.expire
 }
 
 func (g *gocache) Get(key interface{}) (interface{}, bool) {
@@ -65,7 +71,11 @@ func (g *gocache) GetExpire(key interface{}) (int64, bool) {
 
 func (g *gocache) get(key interface{}) (*value, bool) {
 	if value, ok := g.m[key]; ok {
-		return value, true
+		if value.isValid() {
+			return value, ok
+		}
+
+		g.delete(key)
 	}
 
 	return nil, false
