@@ -7,10 +7,16 @@ import (
 	"github.com/bouk/monkey"
 )
 
-func init() {
+func SetNowTime(t time.Time) {
 	monkey.Patch(time.Now, func() time.Time {
-		return time.Date(2018, 11, 2, 0, 0, 0, 0, time.Local)
+		return t
 	})
+}
+
+var defaultNowTimeForTest = time.Date(2018, 11, 2, 0, 0, 0, 0, time.Local)
+
+func init() {
+	SetNowTime(defaultNowTimeForTest)
 }
 
 func TestNew(t *testing.T) {
@@ -244,6 +250,88 @@ func TestClear(t *testing.T) {
 
 			if val != nil {
 				t.Errorf("tests[%d] - Get is wrong. expected: %v, got: %v", i, nil, val)
+			}
+		}
+	}
+}
+
+func TestStartDeleteExpired(t *testing.T) {
+	defer SetNowTime(defaultNowTimeForTest)
+
+	tests := []struct {
+		keys     []interface{}
+		vals     []interface{}
+		expected []bool
+	}{
+		{
+			keys:     []interface{}{"key-1", "key-2"},
+			vals:     []interface{}{"key-1_value", "key-2_value"},
+			expected: []bool{false, false},
+		},
+	}
+
+	g := New()
+
+	for i, test := range tests {
+		g.StartDeleteExpired(time.Millisecond * 1)
+
+		for j := 0; j < len(test.keys); j++ {
+			ok := g.SetWithExpire(test.keys[j], test.vals[j], time.Second*1)
+			if !ok {
+				t.Errorf("tests[%d] - SetWithExpire ok is wrong. expected: %v, got: %v", i, true, ok)
+			}
+		}
+
+		SetNowTime(time.Date(2019, 11, 2, 0, 0, 0, 0, time.Local))
+
+		time.Sleep(1 * time.Second)
+
+		for j := 0; j < len(test.keys); j++ {
+			g := g.(*gocache)
+
+			_, ok := g.m[test.keys[j]]
+			if ok {
+				t.Errorf("tests[%d] - g.m[key] is wrong. expected: %v, got: %v", i, test.expected[j], ok)
+			}
+		}
+	}
+}
+
+func TestStopDeleteExpired(t *testing.T) {
+	defer SetNowTime(defaultNowTimeForTest)
+
+	tests := []struct {
+		keys     []interface{}
+		vals     []interface{}
+		expected []bool
+	}{
+		{
+			keys:     []interface{}{"key-1", "key-2"},
+			vals:     []interface{}{"key-1_value", "key-2_value"},
+			expected: []bool{true, true},
+		},
+	}
+
+	g := New()
+	g.StopDeleteExpired()
+
+	for i, test := range tests {
+
+		for j := 0; j < len(test.keys); j++ {
+			ok := g.SetWithExpire(test.keys[j], test.vals[j], time.Second*1)
+			if !ok {
+				t.Errorf("tests[%d] - SetWithExpire ok is wrong. expected: %v, got: %v", i, true, ok)
+			}
+		}
+
+		SetNowTime(time.Date(2019, 11, 2, 0, 0, 0, 0, time.Local))
+
+		for j := 0; j < len(test.keys); j++ {
+			g := g.(*gocache)
+
+			_, ok := g.m[test.keys[j]]
+			if !ok {
+				t.Errorf("tests[%d] - g.m[key] is wrong. expected: %v, got: %v", i, test.expected[j], ok)
 			}
 		}
 	}
