@@ -324,6 +324,8 @@ func TestStopDeleteExpired(t *testing.T) {
 			}
 		}
 
+		SetNowTime(time.Date(2019, 11, 2, 0, 0, 0, 0, time.Local))
+
 		for j := 0; j < len(test.keys); j++ {
 			g := g.(*gocache)
 
