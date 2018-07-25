@@ -40,12 +40,10 @@ func New() Gocache {
 }
 
 func (g *gocache) Get(key interface{}) (interface{}, bool) {
+	defer g.lf.Signal()
 	g.lf.Wait()
 
 	value, ok := g.get(key)
-
-	g.lf.Signal()
-
 	if value == nil {
 		return nil, ok
 	}
@@ -54,12 +52,10 @@ func (g *gocache) Get(key interface{}) (interface{}, bool) {
 }
 
 func (g *gocache) GetExpire(key interface{}) (int64, bool) {
+	defer g.lf.Signal()
 	g.lf.Wait()
 
 	value, ok := g.get(key)
-
-	g.lf.Signal()
-
 	if value == nil {
 		return 0, ok
 	}
@@ -68,8 +64,8 @@ func (g *gocache) GetExpire(key interface{}) (int64, bool) {
 }
 
 func (g *gocache) get(key interface{}) (*value, bool) {
-	if val, ok := g.m[key]; ok {
-		return val, true
+	if value, ok := g.m[key]; ok {
+		return value, true
 	}
 
 	return nil, false
