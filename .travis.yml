@@ -1,0 +1,12 @@
+language: go
+go:
+  - "1.8"
+  - "1.9"
+  - "1.10.x"
+  - master
+defore_script:
+  - go get github.com/golang/dep/...
+install:
+  - $GOPATH/bin/dep ensure
+script:
+  - go test -v ./
