@@ -93,7 +93,7 @@ func (g *gocache) start(dur time.Duration) {
 }
 
 func (g *value) isValid() bool {
-	return time.Now().UnixNano() > g.expire
+	return time.Now().UnixNano() < g.expire
 }
 
 func (g *gocache) Get(key interface{}) (interface{}, bool) {
