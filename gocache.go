@@ -38,12 +38,12 @@ func New() Gocache {
 		expire: time.Second * 50,
 	}
 
-	g.start()
+	go g.start()
 
 	return g
 }
 
-func (g *gocache) start() Gocache {
+func (g *gocache) start() {
 	go func() {
 		t := time.NewTicker(10 * time.Second)
 		for {
@@ -53,8 +53,6 @@ func (g *gocache) start() Gocache {
 			}
 		}
 	}()
-
-	return g
 }
 
 func (g *value) isValid() bool {
