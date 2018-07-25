@@ -3,6 +3,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/bouk/monkey"
+  packages = ["."]
+  revision = "5df1f207ff77e025801505ae4d903133a0b4353f"
+
+[[projects]]
+  branch = "master"
   name = "github.com/hlts2/lock-free"
   packages = ["."]
   revision = "9fee55c74b9bd94ac0607879d406b46dba21a3bd"
@@ -10,6 +16,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "14d99e3182a62aba52639110bf55dae4b4b4a95c826849be1266ee13a0fe9d2a"
+  inputs-digest = "5a64dd9293214c0ae57ebd77a42b3beac9ccd64ec0f1dda42a3de8090fb88ccc"
   solver-name = "gps-cdcl"
   solver-version = 1
