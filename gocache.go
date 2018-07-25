@@ -118,7 +118,7 @@ func (g *gocache) SetWithExpire(key, val interface{}, expire time.Duration) bool
 }
 
 func (g *gocache) set(key, val interface{}, expire time.Duration) bool {
-	if expire < 0 {
+	if expire <= 0 {
 		return false
 	}
 
