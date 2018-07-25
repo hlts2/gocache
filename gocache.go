@@ -6,6 +6,11 @@ import (
 	"github.com/hlts2/lock-free"
 )
 
+const (
+	defaultExpire         = 50 * time.Second
+	deleteExpiredJobInval = 10 * time.Second
+)
+
 type (
 
 	// Gocache is base interface type
@@ -16,12 +21,15 @@ type (
 		SetWithExpire(interface{}, interface{}, time.Duration) bool
 		Delete(interface{}) bool
 		Clear()
+		StartDeleteExpired(dur time.Duration)
+		StopDeleteExpired()
 	}
 
 	gocache struct {
-		lf     lockfree.LockFree
-		m      map[interface{}]*value
-		expire time.Duration
+		lf          lockfree.LockFree
+		m           map[interface{}]*value
+		startingJob bool
+		finishJob   chan bool
 	}
 
 	value struct {
@@ -33,21 +41,41 @@ type (
 // New returns Gocache (*gocache) instance
 func New() Gocache {
 	g := &gocache{
-		lf:     lockfree.New(),
-		m:      make(map[interface{}]*value),
-		expire: time.Second * 50,
+		lf:          lockfree.New(),
+		m:           make(map[interface{}]*value),
+		startingJob: false,
+		finishJob:   make(chan bool),
 	}
 
-	go g.start()
+	g.StartDeleteExpired(defaultExpire)
 
 	return g
 }
 
-func (g *gocache) start() {
+func (g *gocache) StartDeleteExpired(dur time.Duration) {
+	g.StopDeleteExpired()
+
+	g.startingJob = true
+
+	go g.start(dur)
+}
+
+func (g *gocache) StopDeleteExpired() {
+	if g.startingJob {
+		g.finishJob <- true
+		g.startingJob = false
+	}
+}
+
+func (g *gocache) start(dur time.Duration) {
 	go func() {
-		t := time.NewTicker(10 * time.Second)
+		t := time.NewTicker(dur)
+
+	END_LOOP:
 		for {
 			select {
+			case _ = <-g.finishJob:
+				break END_LOOP
 			case _ = <-t.C:
 				g.DeleteExpired()
 			}
@@ -98,7 +126,7 @@ func (g *gocache) get(key interface{}) (*value, bool) {
 func (g *gocache) Set(key, val interface{}) bool {
 	g.lf.Wait()
 
-	ok := g.set(key, val, g.expire)
+	ok := g.set(key, val, defaultExpire)
 
 	g.lf.Signal()
 
