@@ -54,6 +54,66 @@ func TestIsValid(t *testing.T) {
 	}
 }
 
+func TestSet(t *testing.T) {
+	tests := []struct {
+		key      interface{}
+		val      interface{}
+		expected bool
+	}{
+		{
+			key:      "key-1",
+			val:      "key-1_value",
+			expected: true,
+		},
+	}
+
+	g := New()
+
+	for i, test := range tests {
+		ok := g.Set(test.key, test.val)
+		if test.expected != ok {
+			t.Errorf("tests[%d] - Set is wrong. expected: %v, got: %v", i, test.expected, ok)
+		}
+	}
+}
+
+func TestSetWithExpire(t *testing.T) {
+	tests := []struct {
+		key      interface{}
+		val      interface{}
+		expire   time.Duration
+		expected bool
+	}{
+		{
+			key:      "key-1",
+			val:      "key-1_value",
+			expire:   time.Second * 100,
+			expected: true,
+		},
+		{
+			key:      "key-1",
+			val:      "key-1_value",
+			expire:   time.Second * 0,
+			expected: false,
+		},
+		{
+			key:      "key-1",
+			val:      "key-1_value",
+			expire:   time.Second * -100,
+			expected: false,
+		},
+	}
+
+	g := New()
+
+	for i, test := range tests {
+		ok := g.SetWithExpire(test.key, test.val, test.expire)
+		if test.expected != ok {
+			t.Errorf("tests[%d] - SetWithExpire is wrong. expected: %v, got: %v", i, test.expected, ok)
+		}
+	}
+}
+
 func TestGet(t *testing.T) {
 	tests := []struct {
 		key      interface{}
