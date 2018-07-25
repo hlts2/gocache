@@ -10,6 +10,7 @@ type (
 
 	// Gocache is base interface type
 	Gocache interface {
+		StartExpired(time.Duration) Gocache
 		Get(interface{}) (interface{}, bool)
 		GetExpire(interface{}) (int64, bool)
 		Set(interface{}, interface{}) bool
@@ -37,6 +38,20 @@ func New() Gocache {
 		m:      make(map[interface{}]*value),
 		expire: time.Second * 50,
 	}
+
+	return g
+}
+
+func (g *gocache) StartExpired(dur time.Duration) Gocache {
+	go func() {
+		t := time.NewTicker(dur)
+		for {
+			select {
+			case _ = <-t.C:
+				g.DeleteExpired()
+			}
+		}
+	}()
 
 	return g
 }
@@ -123,6 +138,18 @@ func (g *gocache) Delete(key interface{}) bool {
 	g.lf.Signal()
 
 	return ok
+}
+
+func (g *gocache) DeleteExpired() {
+	for key, value := range g.m {
+		g.lf.Wait()
+
+		if !value.isValid() {
+			delete(g.m, key)
+		}
+
+		g.lf.Signal()
+	}
 }
 
 func (g *gocache) delete(key interface{}) bool {
