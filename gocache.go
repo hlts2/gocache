@@ -21,8 +21,8 @@ type (
 		SetWithExpire(interface{}, interface{}, time.Duration) bool
 		Delete(interface{}) bool
 		Clear()
-		StartDeleteExpired(dur time.Duration)
-		StopDeleteExpired()
+		StartDeleteExpired(dur time.Duration) bool
+		StopDeleteExpired() bool
 	}
 
 	gocache struct {
@@ -52,19 +52,28 @@ func New() Gocache {
 	return g
 }
 
-func (g *gocache) StartDeleteExpired(dur time.Duration) {
+func (g *gocache) StartDeleteExpired(dur time.Duration) bool {
+	if int(dur) <= 0 {
+		return false
+	}
+
 	g.StopDeleteExpired()
+
+	go g.start(dur)
 
 	g.startingJob = true
 
-	go g.start(dur)
+	return true
 }
 
-func (g *gocache) StopDeleteExpired() {
+func (g *gocache) StopDeleteExpired() bool {
 	if g.startingJob {
 		g.finishJob <- true
 		g.startingJob = false
+		return true
 	}
+
+	return false
 }
 
 func (g *gocache) start(dur time.Duration) {
