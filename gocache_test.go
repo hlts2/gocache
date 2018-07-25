@@ -318,13 +318,11 @@ func TestStopDeleteExpired(t *testing.T) {
 	for i, test := range tests {
 
 		for j := 0; j < len(test.keys); j++ {
-			ok := g.SetWithExpire(test.keys[j], test.vals[j], time.Second*1)
+			ok := g.Set(test.keys[j], test.vals[j])
 			if !ok {
 				t.Errorf("tests[%d] - SetWithExpire ok is wrong. expected: %v, got: %v", i, true, ok)
 			}
 		}
-
-		SetNowTime(time.Date(2019, 11, 2, 0, 0, 0, 0, time.Local))
 
 		for j := 0; j < len(test.keys); j++ {
 			g := g.(*gocache)
