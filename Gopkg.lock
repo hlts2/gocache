@@ -13,9 +13,15 @@
   packages = ["."]
   revision = "9fee55c74b9bd94ac0607879d406b46dba21a3bd"
 
+[[projects]]
+  name = "github.com/patrickmn/go-cache"
+  packages = ["."]
+  revision = "a3647f8e31d79543b2d0f0ae2fe5c379d72cedc0"
+  version = "v2.1.0"
+
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "5a64dd9293214c0ae57ebd77a42b3beac9ccd64ec0f1dda42a3de8090fb88ccc"
+  inputs-digest = "1e070c0959664ba052904a546887f0a43ea9b2c092ea8eabc308e2d297b00788"
   solver-name = "gps-cdcl"
   solver-version = 1
