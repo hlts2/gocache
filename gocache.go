@@ -97,39 +97,41 @@ func (g *value) isValid() bool {
 }
 
 func (g *gocache) Get(key string) (interface{}, bool) {
-	defer g.lf.Signal()
 	g.lf.Wait()
 
 	value, ok := g.get(key)
-	if value == nil {
+	if value.expire == 0 {
+		g.lf.Signal()
 		return nil, ok
 	}
 
+	g.lf.Signal()
 	return value.val, ok
 }
 
 func (g *gocache) GetExpire(key string) (int64, bool) {
-	defer g.lf.Signal()
 	g.lf.Wait()
 
 	value, ok := g.get(key)
-	if value == nil {
+	if value.expire == 0 {
+		g.lf.Signal()
 		return 0, ok
 	}
 
+	g.lf.Signal()
 	return value.expire, ok
 }
 
-func (g *gocache) get(key string) (*value, bool) {
+func (g *gocache) get(key string) (value, bool) {
 	if value, ok := g.m[key]; ok {
 		if value.isValid() {
-			return &value, ok
+			return value, ok
 		}
 
 		g.delete(key)
 	}
 
-	return nil, false
+	return value{}, false
 }
 
 func (g *gocache) Set(key string, val interface{}) bool {
