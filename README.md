@@ -49,7 +49,7 @@ v, ok := cache.Get(key3)
 
 [gocache](https://github.com/hlts2/gocache) vs [go-cache](https://github.com/patrickmn/go-cache)
 
-[!Bench](https://github.com/hlts2/gocache/blob/master/images/benchmarks.png)
+![Bench](https://github.com/hlts2/gocache/blob/master/images/benchmarks.png)
 
 ## TODO
 
