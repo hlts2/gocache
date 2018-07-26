@@ -62,7 +62,7 @@ func TestIsValid(t *testing.T) {
 
 func TestSet(t *testing.T) {
 	tests := []struct {
-		key      interface{}
+		key      string
 		val      interface{}
 		expected bool
 	}{
@@ -85,7 +85,7 @@ func TestSet(t *testing.T) {
 
 func TestSetWithExpire(t *testing.T) {
 	tests := []struct {
-		key      interface{}
+		key      string
 		val      interface{}
 		expire   time.Duration
 		expected bool
@@ -122,7 +122,7 @@ func TestSetWithExpire(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	tests := []struct {
-		key      interface{}
+		key      string
 		val      interface{}
 		expected interface{}
 	}{
@@ -154,7 +154,7 @@ func TestGet(t *testing.T) {
 
 func TestGetExpire(t *testing.T) {
 	tests := []struct {
-		key      interface{}
+		key      string
 		val      interface{}
 		expected int64
 	}{
@@ -186,7 +186,7 @@ func TestGetExpire(t *testing.T) {
 
 func TestDelete(t *testing.T) {
 	tests := []struct {
-		key      interface{}
+		key      string
 		val      interface{}
 		expected bool
 	}{
@@ -219,12 +219,12 @@ func TestDelete(t *testing.T) {
 
 func TestClear(t *testing.T) {
 	tests := []struct {
-		keys     []interface{}
+		keys     []string
 		vals     []interface{}
 		expected []bool
 	}{
 		{
-			keys:     []interface{}{"key-1", "key-2"},
+			keys:     []string{"key-1", "key-2"},
 			vals:     []interface{}{"key-1_value", "key-2_value"},
 			expected: []bool{false, false},
 		},
@@ -259,12 +259,12 @@ func TestStartDeleteExpired(t *testing.T) {
 	defer SetNowTime(defaultNowTimeForTest)
 
 	tests := []struct {
-		keys     []interface{}
+		keys     []string
 		vals     []interface{}
 		expected []bool
 	}{
 		{
-			keys:     []interface{}{"key-1", "key-2"},
+			keys:     []string{"key-1", "key-2"},
 			vals:     []interface{}{"key-1_value", "key-2_value"},
 			expected: []bool{false, false},
 		},
@@ -301,12 +301,12 @@ func TestStopDeleteExpired(t *testing.T) {
 	defer SetNowTime(defaultNowTimeForTest)
 
 	tests := []struct {
-		keys     []interface{}
+		keys     []string
 		vals     []interface{}
 		expected []bool
 	}{
 		{
-			keys:     []interface{}{"key-1", "key-2"},
+			keys:     []string{"key-1", "key-2"},
 			vals:     []interface{}{"key-1_value", "key-2_value"},
 			expected: []bool{true, true},
 		},
