@@ -17,13 +17,13 @@ go get github.com/hlts2/gocache
 
 ```go
 
-cache := gocache.New()
-
 var (
   key1 = "key_1"
   
   value1  = "value_1"
 )
+
+cache := gocache.New()
 
 // default expire is 50 Seconds
 ok := cache.Set(key1, val) // true
