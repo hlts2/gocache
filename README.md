@@ -47,6 +47,14 @@ v, ok := cache.Get(key3)
 
 ## Benchmarks
 
+[gocache](https://github.com/hlts2/gocache) vs [go-cache](https://github.com/patrickmn/go-cache)
+
+[!Bench](https://github.com/hlts2/gocache/blob/master/images/benchmarks.png)
+
+## TODO
+
+- [ ] Increase benchmark target
+
 ## Author
 [hlts2](https://github.com/hlts2)
 
