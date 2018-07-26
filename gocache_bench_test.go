@@ -4,20 +4,25 @@ import (
 	"testing"
 	"time"
 
+	"github.com/allegro/bigcache"
 	"github.com/bouk/monkey"
 	"github.com/patrickmn/go-cache"
 )
+
+var data = map[string]string{
+	"key_1": "key_1_value",
+}
 
 func BenchmarkGocache(b *testing.B) {
 	monkey.Unpatch(time.Now)
 	g := New()
 
-	key, val := "key_1", "key_1_value"
-
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		g.Set(key, val)
-		g.Get(key)
+		for key, val := range data {
+			g.Set(key, val)
+			g.Get(key)
+		}
 	}
 }
 
@@ -25,12 +30,28 @@ func BenchmarkGo_cache(b *testing.B) {
 	monkey.Unpatch(time.Now)
 	c := cache.New(5*time.Minute, 10*time.Minute)
 
-	key, val := "key_1", "key_1_value"
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		for key, val := range data {
+			c.Set(key, val, time.Second*50)
+			c.Get(key)
+		}
+	}
+}
+
+func BenchmarkBigcache(b *testing.B) {
+	monkey.Unpatch(time.Now)
+	c := bigcache.DefaultConfig(10 * time.Minute)
+	c.Verbose = false
+	cache, _ := bigcache.NewBigCache(c)
 
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		c.Set(key, val, 50*time.Second)
-		c.Get(key)
+		for key, val := range data {
+			cache.Set(key, []byte(val))
+			cache.Get(key)
+		}
 	}
 }
