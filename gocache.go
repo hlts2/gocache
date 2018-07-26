@@ -128,7 +128,7 @@ func (g *gocache) get(key string) (value, bool) {
 			return value, ok
 		}
 
-		g.delete(key)
+		g.forceDelete(key)
 	}
 
 	return value{}, false
@@ -198,6 +198,10 @@ func (g *gocache) delete(key string) bool {
 	delete(g.m, key)
 
 	return true
+}
+
+func (g *gocache) forceDelete(key string) {
+	delete(g.m, key)
 }
 
 func (g *gocache) Clear() {
