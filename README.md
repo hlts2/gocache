@@ -49,7 +49,7 @@ v, ok := cache.Get(key3)
 
 [gocache](https://github.com/hlts2/gocache) vs [go-cache](https://github.com/patrickmn/go-cache)
 
-The version of golang is 1.10.3
+The version of golang is `go1.10.3 linux/amd64`
 ![Bench](https://github.com/hlts2/gocache/blob/master/images/benchmarks.png)
 
 ## TODO
