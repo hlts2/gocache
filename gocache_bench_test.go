@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/allegro/bigcache"
 	"github.com/bouk/monkey"
 	"github.com/patrickmn/go-cache"
 )
@@ -36,22 +35,6 @@ func BenchmarkGo_cache(b *testing.B) {
 		for key, val := range data {
 			c.Set(key, val, time.Second*50)
 			c.Get(key)
-		}
-	}
-}
-
-func BenchmarkBigcache(b *testing.B) {
-	monkey.Unpatch(time.Now)
-	c := bigcache.DefaultConfig(10 * time.Minute)
-	c.Verbose = false
-	cache, _ := bigcache.NewBigCache(c)
-
-	b.ResetTimer()
-
-	for i := 0; i < b.N; i++ {
-		for key, val := range data {
-			cache.Set(key, []byte(val))
-			cache.Get(key)
 		}
 	}
 }
