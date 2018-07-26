@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	defaultExpire         = 50 * time.Second
-	deleteExpiredJobInval = 10 * time.Second
+	defaultExpire         time.Duration = 50 * time.Second
+	deleteExpiredJobInval time.Duration = 10 * time.Second
 )
 
 type (
@@ -47,7 +47,7 @@ func New() Gocache {
 		finishJob:   make(chan bool),
 	}
 
-	g.StartDeleteExpired(defaultExpire)
+	g.StartDeleteExpired(deleteExpiredJobInval)
 
 	return g
 }
