@@ -1,4 +1,6 @@
-# gcache
+# gocache
+
+gocache is simple fast lockfree cache library written in golang
 
 ## Requirement
 Go (>= 1.8)
