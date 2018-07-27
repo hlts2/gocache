@@ -54,7 +54,7 @@ The version of golang is `go1.10.3 linux/amd64`
 
 ## TODO
 
-- [ ] Increase benchmark target
+- [x] Increase benchmark target
 
 ## Author
 [hlts2](https://github.com/hlts2)
