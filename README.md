@@ -3,7 +3,7 @@
 gocache is simple fast lockfree cache library written in golang
 
 ## Requirement
-Go (>= 1.8)
+Go (>= 1.9)
 
 ## Installation
 
