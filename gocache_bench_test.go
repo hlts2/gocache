@@ -17,7 +17,7 @@ var data = map[string]string{
 	"key_4": "key_1_value",
 }
 
-func BenchmarkGocache(b *testing.B) {
+func BenchmarkThisLibrary(b *testing.B) {
 	monkey.Unpatch(time.Now)
 	g := New()
 	g.StopDeleteExpired()
@@ -45,7 +45,21 @@ func BenchmarkGo_cache(b *testing.B) {
 	}
 }
 
-func BenchmarkGoacheARC(b *testing.B) {
+func BenchmarkGcacheARC(b *testing.B) {
+	monkey.Unpatch(time.Now)
+	gc := gcache.New(10).ARC().Build()
+
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		for key, val := range data {
+			gc.Set(key, val)
+			gc.Get(key)
+		}
+	}
+}
+
+func BenchmarkGcacheSimple(b *testing.B) {
 	monkey.Unpatch(time.Now)
 	gc := gcache.New(10).Build()
 
