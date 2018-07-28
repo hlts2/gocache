@@ -23,7 +23,7 @@ var (
   key1 = "key_1"
   key2 = "key_2"
   key3 = "key_3"
-  
+
   value1  = "value_1"
   value2  = 1234
   value3  = struct{}{}
@@ -50,7 +50,6 @@ v, ok := cache.Get(key3)
 [gocache](https://github.com/hlts2/gocache) vs [go-cache](https://github.com/patrickmn/go-cache) vs [gache](https://github.com/kpango/gache) vs [gcache](https://github.com/bluele/gcache)
 
 The version of golang is `go1.10.3 linux/amd64`
-![Bench](https://github.com/hlts2/gocache/blob/master/images/benchmarks.png)
 
 ## TODO
 
