@@ -212,6 +212,10 @@ func (c *concurrentMap) delete(key string) bool {
 
 func (g *gocache) Clear() {
 	for i := 0; i < len(g.concurrentMaps); i++ {
+		c := g.concurrentMaps[i]
+		if c.startingWorker {
+			c.finishWorker <- true
+		}
 		g.concurrentMaps[i] = new(concurrentMap)
 	}
 }
