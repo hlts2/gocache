@@ -1,15 +1,22 @@
 package gocache
 
 import (
+	"sync"
 	"time"
-
-	"github.com/hlts2/lock-free"
 )
 
 const (
-	defaultExpire         time.Duration = 50 * time.Second
-	deleteExpiredJobInval time.Duration = 10 * time.Second
+	// DefaultExpire -
+	DefaultExpire time.Duration = 50 * time.Second
+
+	// DeleteExpiredInterval -
+	DeleteExpiredInterval time.Duration = 10 * time.Second
+
+	// DefaultConrurrentMapCount -
+	DefaultConrurrentMapCount int = 10
 )
+
+type concurrentMaps []*concurrentMap
 
 type (
 
@@ -26,13 +33,16 @@ type (
 	}
 
 	gocache struct {
-		lf          lockfree.LockFree
-		m           map[string]value
-		startingJob bool
-		finishJob   chan bool
+		concurrentMaps
 	}
 
-	value struct {
+	concurrentMap struct {
+		m              sync.Map
+		startingWorker bool
+		finishWorker   chan bool
+	}
+
+	item struct {
 		expire int64
 		val    interface{}
 	}
@@ -41,15 +51,28 @@ type (
 // New returns Gocache (*gocache) instance
 func New() Gocache {
 	g := &gocache{
-		lf:          lockfree.New(),
-		m:           make(map[string]value),
-		startingJob: false,
-		finishJob:   make(chan bool),
+		concurrentMaps: make(concurrentMaps, 0, DefaultConrurrentMapCount),
 	}
 
-	g.StartDeleteExpired(deleteExpiredJobInval)
+	for i := 0; i < DefaultConrurrentMapCount; i++ {
+		g.concurrentMaps = append(g.concurrentMaps, new(concurrentMap))
+	}
 
 	return g
+}
+
+func (c concurrentMaps) getMap(key string) *concurrentMap {
+	return c[fnv32(key)%uint32(DefaultConrurrentMapCount)]
+}
+
+func fnv32(key string) uint32 {
+	hash := uint32(2166136261)
+	const prime32 = uint32(16777619)
+	for i := 0; i < len(key); i++ {
+		hash *= prime32
+		hash ^= uint32(key[i])
+	}
+	return hash
 }
 
 func (g *gocache) StartDeleteExpired(dur time.Duration) bool {
@@ -59,159 +82,140 @@ func (g *gocache) StartDeleteExpired(dur time.Duration) bool {
 
 	g.StopDeleteExpired()
 
-	go g.start(dur)
-
-	g.startingJob = true
+	for _, c := range g.concurrentMaps {
+		go c.start(dur)
+	}
 
 	return true
 }
 
 func (g *gocache) StopDeleteExpired() bool {
-	if g.startingJob {
-		g.finishJob <- true
-		g.startingJob = false
-		return true
+	for _, c := range g.concurrentMaps {
+		c.finishWorker <- true
+		c.startingWorker = true
 	}
 
-	return false
+	return true
 }
 
-func (g *gocache) start(dur time.Duration) {
+func (c *concurrentMap) start(dur time.Duration) {
 	go func() {
 		t := time.NewTicker(dur)
 
 	END_LOOP:
 		for {
 			select {
-			case _ = <-g.finishJob:
+			case _ = <-c.finishWorker:
 				break END_LOOP
 			case _ = <-t.C:
-				g.DeleteExpired()
+				c.deleteExpired()
 			}
 		}
 	}()
 }
 
-func (g *value) isValid() bool {
+func (g *item) isValid() bool {
 	return time.Now().UnixNano() < g.expire
 }
 
 func (g *gocache) Get(key string) (interface{}, bool) {
-	g.lf.Wait()
+	c := g.concurrentMaps.getMap(key)
 
-	value, ok := g.get(key)
-	if value.expire == 0 {
-		g.lf.Signal()
-		return nil, ok
+	item, ok := c.get(key)
+	if !ok {
+		return nil, false
 	}
 
-	g.lf.Signal()
-	return value.val, ok
+	return item.val, ok
 }
 
 func (g *gocache) GetExpire(key string) (int64, bool) {
-	g.lf.Wait()
+	c := g.concurrentMaps.getMap(key)
 
-	value, ok := g.get(key)
-	if value.expire == 0 {
-		g.lf.Signal()
-		return 0, ok
+	item, ok := c.get(key)
+	if !ok {
+		return 0, false
 	}
 
-	g.lf.Signal()
-	return value.expire, ok
+	return item.expire, ok
 }
 
-func (g *gocache) get(key string) (value, bool) {
-	if value, ok := g.m[key]; ok {
-		if value.isValid() {
-			return value, ok
+func (c *concurrentMap) get(key string) (item, bool) {
+	value, ok := c.m.Load(key)
+	if ok {
+		i := value.(item)
+		if i.isValid() {
+			return i, ok
 		}
 
-		g.forceDelete(key)
+		c.m.Delete(key)
 	}
 
-	return value{}, false
+	return item{}, false
 }
 
 func (g *gocache) Set(key string, val interface{}) bool {
-	g.lf.Wait()
-
-	ok := g.set(key, val, defaultExpire)
-
-	g.lf.Signal()
-
-	return ok
+	c := g.concurrentMaps.getMap(key)
+	return c.set(key, val, DefaultExpire)
 }
 
 func (g *gocache) SetWithExpire(key string, val interface{}, expire time.Duration) bool {
-	g.lf.Wait()
-
-	ok := g.set(key, val, expire)
-
-	g.lf.Signal()
-
-	return ok
+	c := g.concurrentMaps.getMap(key)
+	return c.set(key, val, expire)
 }
 
-func (g *gocache) set(key string, val interface{}, expire time.Duration) bool {
+func (c *concurrentMap) set(key string, val interface{}, expire time.Duration) bool {
 	if expire <= 0 {
 		return false
 	}
 
-	exp := time.Now().Add(expire).UnixNano()
-
-	g.m[key] = value{
+	c.m.Store(key, item{
 		val:    val,
-		expire: exp,
-	}
+		expire: time.Now().Add(expire).UnixNano(),
+	})
+
 	return true
 }
 
 func (g *gocache) Delete(key string) bool {
-	g.lf.Wait()
-
-	ok := g.delete(key)
-
-	g.lf.Signal()
-
-	return ok
+	c := g.concurrentMaps.getMap(key)
+	return c.delete(key)
 }
 
 func (g *gocache) DeleteExpired() {
-	for key, value := range g.m {
-		g.lf.Wait()
-
-		if !value.isValid() {
-			g.delete(key)
-		}
-
-		g.lf.Signal()
+	for _, concurrentMap := range g.concurrentMaps {
+		concurrentMap.deleteExpired()
 	}
 }
 
-func (g *gocache) delete(key string) bool {
-	if _, ok := g.m[key]; !ok {
+func (c *concurrentMap) deleteExpired() {
+	c.m.Range(func(key interface{}, val interface{}) bool {
+		item := val.(item)
+
+		if !item.isValid() {
+			c.m.Delete(key)
+		}
+		return true
+	})
+}
+
+func (c *concurrentMap) delete(key string) bool {
+	_, ok := c.m.Load(key)
+	if !ok {
 		return false
 	}
 
-	delete(g.m, key)
+	c.m.Delete(key)
 
 	return true
 }
 
-func (g *gocache) forceDelete(key string) {
-	delete(g.m, key)
+func (c *concurrentMap) forceDelete(key string) {
+	c.m.Delete(key)
 }
 
 func (g *gocache) Clear() {
-	g.lf.Wait()
-
-	g.clear()
-
-	g.lf.Signal()
-}
-
-func (g *gocache) clear() {
-	g.m = make(map[string]value)
+	for i := 0; i < len(g.concurrentMaps); i++ {
+		g.concurrentMaps[i] = new(concurrentMap)
+	}
 }
