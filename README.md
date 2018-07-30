@@ -1,4 +1,4 @@
-# gocache [![Go Report Card](https://goreportcard.com/badge/github.com/hlts2/gocache)](https://goreportcard.com/report/github.com/hlts2/gocache)
+# gocache [![Go Report Card](https://goreportcard.com/badge/github.com/hlts2/gocache)](https://goreportcard.com/report/github.com/hlts2/gocache) [![Gitter](https://badges.gitter.im/hlts2/gocache.svg)](https://gitter.im/hlts2/gocache?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
 gocache is simple ultra fast lock-free cache library written in golang
 
