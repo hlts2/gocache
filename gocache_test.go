@@ -217,44 +217,44 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-//
-// func TestClear(t *testing.T) {
-// 	tests := []struct {
-// 		keys     []string
-// 		vals     []interface{}
-// 		expected []bool
-// 	}{
-// 		{
-// 			keys:     []string{"key-1", "key-2"},
-// 			vals:     []interface{}{"key-1_value", "key-2_value"},
-// 			expected: []bool{false, false},
-// 		},
-// 	}
-//
-// 	g := New()
-//
-// 	for i, test := range tests {
-// 		for j := 0; j < len(test.keys); j++ {
-// 			ok := g.Set(test.keys[j], test.vals[j])
-// 			if !ok {
-// 				t.Errorf("tests[%d] - Set ok is wrong. expected: %v, got: %v", i, true, ok)
-// 			}
-// 		}
-//
-// 		g.Clear()
-//
-// 		for j := 0; j < len(test.keys); j++ {
-// 			val, ok := g.Get(test.keys[j])
-// 			if ok {
-// 				t.Errorf("tests[%d] - Get ok is wrong. expected: %v, got: %v", i, test.expected[j], ok)
-// 			}
-//
-// 			if val != nil {
-// 				t.Errorf("tests[%d] - Get is wrong. expected: %v, got: %v", i, nil, val)
-// 			}
-// 		}
-// 	}
-// }
+func TestClear(t *testing.T) {
+	tests := []struct {
+		keys     []string
+		vals     []interface{}
+		expected []bool
+	}{
+		{
+			keys:     []string{"key-1", "key-2"},
+			vals:     []interface{}{"key-1_value", "key-2_value"},
+			expected: []bool{false, false},
+		},
+	}
+
+	g := New()
+
+	for i, test := range tests {
+		for j := 0; j < len(test.keys); j++ {
+			ok := g.Set(test.keys[j], test.vals[j])
+			if !ok {
+				t.Errorf("tests[%d] - Set ok is wrong. expected: %v, got: %v", i, true, ok)
+			}
+		}
+
+		g.Clear()
+
+		for j := 0; j < len(test.keys); j++ {
+			val, ok := g.Get(test.keys[j])
+			if ok {
+				t.Errorf("tests[%d] - Get ok is wrong. expected: %v, got: %v", i, test.expected[j], ok)
+			}
+
+			if val != nil {
+				t.Errorf("tests[%d] - Get is wrong. expected: %v, got: %v", i, nil, val)
+			}
+		}
+	}
+}
+
 //
 // func TestStartDeleteExpired(t *testing.T) {
 // 	defer SetNowTime(defaultNowTimeForTest)
