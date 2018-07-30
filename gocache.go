@@ -37,7 +37,7 @@ type (
 	}
 
 	concurrentMap struct {
-		m              sync.Map
+		m              *sync.Map
 		startingWorker bool
 		finishWorker   chan bool
 	}
@@ -55,7 +55,11 @@ func New() Gocache {
 	}
 
 	for i := 0; i < DefaultConrurrentMapCount; i++ {
-		g.concurrentMaps = append(g.concurrentMaps, new(concurrentMap))
+		g.concurrentMaps = append(g.concurrentMaps, &concurrentMap{
+			m:              new(sync.Map),
+			startingWorker: false,
+			finishWorker:   make(chan bool),
+		})
 	}
 
 	return g
