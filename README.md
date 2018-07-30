@@ -1,6 +1,6 @@
 # gocache
 
-gocache is simple fast lockfree cache library written in golang
+gocache is simple ultra fast lock-free cache library written in golang
 
 ## Requirement
 Go (>= 1.9)
@@ -50,10 +50,12 @@ v, ok := cache.Get(key3)
 [gocache](https://github.com/hlts2/gocache) vs [go-cache](https://github.com/patrickmn/go-cache) vs [gache](https://github.com/kpango/gache) vs [gcache](https://github.com/bluele/gcache)
 
 The version of golang is `go1.10.3 linux/amd64`
+![Bench](https://github.com/hlts2/gocache/blob/master/images/benchmarks.png)
 
 ## TODO
 
-- [ ] Increase benchmark target
+- [x] Increase benchmark target
+- [ ] add comment
 
 ## Author
 [hlts2](https://github.com/hlts2)
