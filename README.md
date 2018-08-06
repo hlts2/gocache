@@ -52,11 +52,6 @@ v, ok := cache.Get(key3)
 The version of golang is `go1.10.3 linux/amd64`
 ![Bench](https://github.com/hlts2/gocache/blob/master/images/benchmarks.png)
 
-## TODO
-
-- [x] Increase benchmark target
-- [ ] add comment
-
 ## Author
 [hlts2](https://github.com/hlts2)
 
