@@ -9,7 +9,7 @@ const (
 	// DefaultExpire is default expiration date.
 	DefaultExpire time.Duration = 50 * time.Second
 
-	// DeleteExpiredInterval is the interval at which the worker deltes all expired cache objects
+	// DeleteExpiredInterval is the default interval at which the worker deltes all expired cache objects
 	DeleteExpiredInterval time.Duration = 10 * time.Second
 
 	// DefaultConrurrentMapCount is the number of elements of hashmap.

@@ -56,4 +56,4 @@ The version of golang is `go1.10.3 linux/amd64`
 [hlts2](https://github.com/hlts2)
 
 ## LICENSE
-gcache released under MIT license, refer [LICENSE](https://github.com/hlts2/gcache/blob/master/LICENSE) file.
+gocache released under MIT license, refer [LICENSE](https://github.com/hlts2/gocache/blob/master/LICENSE) file.
