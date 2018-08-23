@@ -6,13 +6,13 @@ import (
 )
 
 const (
-	// DefaultExpire -
+	// DefaultExpire is default expiration date.
 	DefaultExpire time.Duration = 50 * time.Second
 
-	// DeleteExpiredInterval -
+	// DeleteExpiredInterval is the interval at which the worker deltes all expired cache objects
 	DeleteExpiredInterval time.Duration = 10 * time.Second
 
-	// DefaultConrurrentMapCount -
+	// DefaultConrurrentMapCount is the number of elements of hashmap.
 	DefaultConrurrentMapCount int = 10
 )
 
@@ -20,15 +20,32 @@ type concurrentMaps []*concurrentMap
 
 type (
 
-	// Gocache is base interface type
+	// Gocache is core gocache interface type.
 	Gocache interface {
+
+		// Get returns cache object of given the name.
 		Get(string) (interface{}, bool)
+
+		// GetExpire returns expiration date of cache object of given the name.
 		GetExpire(string) (int64, bool)
+
+		// Set sets object in th cache.
 		Set(string, interface{}) bool
+
+		// SetWithExpire sets object in cache with an expiration date.
 		SetWithExpire(string, interface{}, time.Duration) bool
+
+		// Delete deletes cache object of given name.
 		Delete(string) bool
+
+		// Clear clears cache.
 		Clear()
+
+		// StartDeleteExpired starts worker that deletes an expired cache object.
+		// Deletion processing is executed at intervals of given time.
 		StartDeleteExpired(dur time.Duration) bool
+
+		// StopDeleteExpired stop worker that deletes an expired cache object.
 		StopDeleteExpired() bool
 	}
 
@@ -48,7 +65,7 @@ type (
 	}
 )
 
-// New returns Gocache (*gocache) instance
+// New returns Gocache (*gocache) instance.
 func New() Gocache {
 	g := &gocache{
 		concurrentMaps: make(concurrentMaps, 0, DefaultConrurrentMapCount),
