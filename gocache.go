@@ -13,7 +13,7 @@ const (
 	DeleteExpiredInterval time.Duration = 10 * time.Second
 
 	// DefaultConrurrentMapCount is the number of elements of hashmap.
-	DefaultConrurrentMapCount int = 10
+	DefaultConrurrentMapCount uint32 = 10
 )
 
 type concurrentMaps []*concurrentMap
@@ -71,7 +71,7 @@ func New() Gocache {
 		concurrentMaps: make(concurrentMaps, 0, DefaultConrurrentMapCount),
 	}
 
-	for i := 0; i < DefaultConrurrentMapCount; i++ {
+	for i := 0; i < int(DefaultConrurrentMapCount); i++ {
 		g.concurrentMaps = append(g.concurrentMaps, &concurrentMap{
 			m:              new(sync.Map),
 			startingWorker: false,
@@ -83,7 +83,7 @@ func New() Gocache {
 }
 
 func (c concurrentMaps) getMap(key string) *concurrentMap {
-	return c[fnv32(key)%uint32(DefaultConrurrentMapCount)]
+	return c[fnv32(key)%DefaultConrurrentMapCount]
 }
 
 func fnv32(key string) uint32 {
