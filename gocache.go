@@ -3,6 +3,8 @@ package gocache
 import (
 	"sync"
 	"time"
+
+	"github.com/hlts2/gfnv"
 )
 
 const (
@@ -83,17 +85,7 @@ func New() Gocache {
 }
 
 func (c concurrentMaps) getMap(key string) *concurrentMap {
-	return c[fnv32(key)%DefaultConrurrentMapCount]
-}
-
-func fnv32(key string) uint32 {
-	hash := uint32(2166136261)
-	const prime32 = uint32(16777619)
-	for i := 0; i < len(key); i++ {
-		hash *= prime32
-		hash ^= uint32(key[i])
-	}
-	return hash
+	return c[gfnv.Fnv32a(key)%DefaultConrurrentMapCount]
 }
 
 func (g *gocache) StartDeleteExpired(dur time.Duration) bool {
