@@ -14,8 +14,8 @@ const (
 	// DeleteExpiredInterval is the default interval at which the worker deltes all expired cache objects
 	DeleteExpiredInterval time.Duration = 10 * time.Second
 
-	// DefaultConrurrentMapCount is the number of elements of concurrent map.
-	DefaultConrurrentMapCount uint32 = 10
+	// DefaultConcurrentMapCount is the number of elements of concurrent map.
+	DefaultConcurrentMapCount uint32 = 10
 )
 
 type concurrentMaps []*concurrentMap
@@ -70,10 +70,10 @@ type (
 // New returns Gocache (*gocache) instance.
 func New() Gocache {
 	g := &gocache{
-		concurrentMaps: make(concurrentMaps, 0, DefaultConrurrentMapCount),
+		concurrentMaps: make(concurrentMaps, 0, DefaultConcurrentMapCount),
 	}
 
-	for i := 0; i < int(DefaultConrurrentMapCount); i++ {
+	for i := 0; i < int(DefaultConcurrentMapCount); i++ {
 		g.concurrentMaps = append(g.concurrentMaps, &concurrentMap{
 			m:              new(sync.Map),
 			startingWorker: false,
@@ -167,7 +167,7 @@ func (g *item) isValid() bool {
 }
 
 func (c concurrentMaps) getMap(key string) *concurrentMap {
-	return c[gfnv.Fnv32a(key)%DefaultConrurrentMapCount]
+	return c[gfnv.Fnv32a(key)%DefaultConcurrentMapCount]
 }
 
 func (c *concurrentMap) get(key string) (item, bool) {
