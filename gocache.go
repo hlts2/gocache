@@ -49,7 +49,7 @@ type (
 		StartDeleteExpired(dur time.Duration) Gocache
 
 		// StopDeleteExpired stop worker that deletes an expired cache object.
-		StopDeleteExpired() bool
+		StopDeleteExpired() Gocache
 
 		// StartingDeleteExpired returns true if the worker that deletes expired item is running, returns false otherwise.
 		StartingDeleteExpired() bool
@@ -156,7 +156,7 @@ func (g *gocache) StartDeleteExpired(dur time.Duration) Gocache {
 	return g
 }
 
-func (g *gocache) StopDeleteExpired() bool {
+func (g *gocache) StopDeleteExpired() Gocache {
 	for _, cm := range g.concurrentMaps {
 		if cm.startingWorker {
 			cm.finishWorker <- true
@@ -164,7 +164,7 @@ func (g *gocache) StopDeleteExpired() bool {
 		}
 	}
 
-	return true
+	return g
 }
 
 func (g *gocache) StartingDeleteExpired() bool {
