@@ -158,8 +158,10 @@ func (g *gocache) StartDeleteExpired(dur time.Duration) Gocache {
 
 func (g *gocache) StopDeleteExpired() bool {
 	for _, cm := range g.concurrentMaps {
-		cm.finishWorker <- true
-		cm.startingWorker = false
+		if cm.startingWorker {
+			cm.finishWorker <- true
+			cm.startingWorker = false
+		}
 	}
 
 	return true
