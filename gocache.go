@@ -3,8 +3,9 @@ package gocache
 import (
 	"sync"
 	"time"
+	"unsafe"
 
-	"github.com/hlts2/gfnv"
+	"github.com/cespare/xxhash"
 )
 
 const (
@@ -15,7 +16,7 @@ const (
 	DeleteExpiredInterval time.Duration = 10 * time.Second
 
 	// DefaultConcurrentMapCount is the number of elements of concurrent map.
-	DefaultConcurrentMapCount uint32 = 10
+	DefaultConcurrentMapCount uint64 = 10
 )
 
 type concurrentMaps []*concurrentMap
@@ -178,7 +179,7 @@ func (g *item) isValid() bool {
 }
 
 func (cms concurrentMaps) getMap(key string) *concurrentMap {
-	return cms[gfnv.Fnv32a(key)%DefaultConcurrentMapCount]
+	return cms[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%DefaultConcurrentMapCount]
 }
 
 func (cm *concurrentMap) get(key string) (item, bool) {
