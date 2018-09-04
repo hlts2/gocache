@@ -45,10 +45,13 @@ type (
 
 		// StartDeleteExpired starts worker that deletes an expired cache object.
 		// Deletion processing is executed at intervals of given time.
-		StartDeleteExpired(dur time.Duration) bool
+		StartDeleteExpired(dur time.Duration) Gocache
 
 		// StopDeleteExpired stop worker that deletes an expired cache object.
 		StopDeleteExpired() bool
+
+		// StartingDeleteExpired returns true if the worker that deletes expired item is running, returns false otherwise.
+		StartingDeleteExpired() bool
 	}
 
 	gocache struct {
@@ -139,27 +142,41 @@ func (g *gocache) Clear() {
 	}
 }
 
-func (g *gocache) StartDeleteExpired(dur time.Duration) bool {
+func (g *gocache) StartDeleteExpired(dur time.Duration) Gocache {
 	if int(dur) <= 0 {
-		return false
+		return g
 	}
 
-	g.StopDeleteExpired()
+	for _, c := range g.concurrentMaps {
+		if c.startingWorker {
+			return g
+		}
+	}
 
 	for _, c := range g.concurrentMaps {
+		c.startingWorker = true
 		go c.start(dur)
 	}
 
-	return true
+	return g
 }
 
 func (g *gocache) StopDeleteExpired() bool {
 	for _, c := range g.concurrentMaps {
 		c.finishWorker <- true
-		c.startingWorker = true
+		c.startingWorker = false
 	}
 
 	return true
+}
+
+func (g *gocache) StartingDeleteExpired() bool {
+	for _, c := range g.concurrentMaps {
+		if c.startingWorker {
+			return true
+		}
+	}
+	return false
 }
 
 func (g *item) isValid() bool {

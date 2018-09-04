@@ -337,3 +337,40 @@ func TestClear(t *testing.T) {
 // 		}
 // 	}
 // }
+
+func TestStartingDeleteExpired(t *testing.T) {
+	tests := []struct {
+		g        Gocache
+		fn       func(g Gocache)
+		expected bool
+	}{
+		{
+			g:        New().StartDeleteExpired(100 * time.Second),
+			fn:       func(g Gocache) { g.StopDeleteExpired() },
+			expected: true,
+		},
+		{
+			g:        New().StartDeleteExpired(0 * time.Second),
+			fn:       func(g Gocache) {},
+			expected: false,
+		},
+		{
+			g:        New().StartDeleteExpired(-1 * time.Second),
+			fn:       func(g Gocache) {},
+			expected: false,
+		},
+		{
+			g:        New(),
+			fn:       func(g Gocache) {},
+			expected: false,
+		},
+	}
+
+	for i, test := range tests {
+		if test.expected != test.g.StartingDeleteExpired() {
+			t.Errorf("tests[%d] - StartingDeleteExpired is wrong. expected: %v, got: %v", i, test.expected, test.g.StartingDeleteExpired())
+		}
+
+		test.fn(test.g)
+	}
+}
