@@ -88,9 +88,9 @@ func New() Gocache {
 }
 
 func (g *gocache) Get(key string) (interface{}, bool) {
-	c := g.concurrentMaps.getMap(key)
+	cm := g.concurrentMaps.getMap(key)
 
-	item, ok := c.get(key)
+	item, ok := cm.get(key)
 	if !ok {
 		return nil, false
 	}
@@ -99,9 +99,9 @@ func (g *gocache) Get(key string) (interface{}, bool) {
 }
 
 func (g *gocache) GetExpire(key string) (int64, bool) {
-	c := g.concurrentMaps.getMap(key)
+	cm := g.concurrentMaps.getMap(key)
 
-	item, ok := c.get(key)
+	item, ok := cm.get(key)
 	if !ok {
 		return 0, false
 	}
@@ -110,35 +110,29 @@ func (g *gocache) GetExpire(key string) (int64, bool) {
 }
 
 func (g *gocache) Set(key string, val interface{}) bool {
-	c := g.concurrentMaps.getMap(key)
-	return c.set(key, val, DefaultExpire)
+	cm := g.concurrentMaps.getMap(key)
+	return cm.set(key, val, DefaultExpire)
 }
 
 func (g *gocache) SetWithExpire(key string, val interface{}, expire time.Duration) bool {
-	c := g.concurrentMaps.getMap(key)
-	return c.set(key, val, expire)
+	cm := g.concurrentMaps.getMap(key)
+	return cm.set(key, val, expire)
 }
 
 func (g *gocache) Delete(key string) bool {
-	c := g.concurrentMaps.getMap(key)
-	return c.delete(key)
+	cm := g.concurrentMaps.getMap(key)
+	return cm.delete(key)
 }
 
 func (g *gocache) DeleteExpired() {
-	for _, concurrentMap := range g.concurrentMaps {
-		concurrentMap.deleteExpired()
+	for _, cm := range g.concurrentMaps {
+		cm.deleteExpired()
 	}
 }
 
 func (g *gocache) Clear() {
-	for i := 0; i < len(g.concurrentMaps); i++ {
-		c := g.concurrentMaps[i]
-		if c.startingWorker {
-			c.finishWorker <- true
-			c.startingWorker = false
-		}
-
-		c.deleteAll()
+	for _, cm := range g.concurrentMaps {
+		cm.deleteAll()
 	}
 }
 
@@ -147,32 +141,32 @@ func (g *gocache) StartDeleteExpired(dur time.Duration) Gocache {
 		return g
 	}
 
-	for _, c := range g.concurrentMaps {
-		if c.startingWorker {
+	for _, cm := range g.concurrentMaps {
+		if cm.startingWorker {
 			return g
 		}
 	}
 
-	for _, c := range g.concurrentMaps {
-		c.startingWorker = true
-		go c.start(dur)
+	for _, cm := range g.concurrentMaps {
+		cm.startingWorker = true
+		go cm.start(dur)
 	}
 
 	return g
 }
 
 func (g *gocache) StopDeleteExpired() bool {
-	for _, c := range g.concurrentMaps {
-		c.finishWorker <- true
-		c.startingWorker = false
+	for _, cm := range g.concurrentMaps {
+		cm.finishWorker <- true
+		cm.startingWorker = false
 	}
 
 	return true
 }
 
 func (g *gocache) StartingDeleteExpired() bool {
-	for _, c := range g.concurrentMaps {
-		if c.startingWorker {
+	for _, cm := range g.concurrentMaps {
+		if cm.startingWorker {
 			return true
 		}
 	}
@@ -183,30 +177,30 @@ func (g *item) isValid() bool {
 	return time.Now().UnixNano() < g.expire
 }
 
-func (c concurrentMaps) getMap(key string) *concurrentMap {
-	return c[gfnv.Fnv32a(key)%DefaultConcurrentMapCount]
+func (cms concurrentMaps) getMap(key string) *concurrentMap {
+	return cms[gfnv.Fnv32a(key)%DefaultConcurrentMapCount]
 }
 
-func (c *concurrentMap) get(key string) (item, bool) {
-	value, ok := c.m.Load(key)
+func (cm *concurrentMap) get(key string) (item, bool) {
+	value, ok := cm.m.Load(key)
 	if ok {
 		i := value.(item)
 		if i.isValid() {
 			return i, ok
 		}
 
-		c.m.Delete(key)
+		cm.m.Delete(key)
 	}
 
 	return item{}, false
 }
 
-func (c *concurrentMap) set(key string, val interface{}, expire time.Duration) bool {
+func (cm *concurrentMap) set(key string, val interface{}, expire time.Duration) bool {
 	if expire <= 0 {
 		return false
 	}
 
-	c.m.Store(key, item{
+	cm.m.Store(key, item{
 		val:    val,
 		expire: time.Now().Add(expire).UnixNano(),
 	})
@@ -214,46 +208,46 @@ func (c *concurrentMap) set(key string, val interface{}, expire time.Duration) b
 	return true
 }
 
-func (c *concurrentMap) delete(key string) bool {
-	_, ok := c.m.Load(key)
+func (cm *concurrentMap) delete(key string) bool {
+	_, ok := cm.m.Load(key)
 	if !ok {
 		return false
 	}
 
-	c.m.Delete(key)
+	cm.m.Delete(key)
 
 	return true
 }
 
-func (c *concurrentMap) deleteAll() {
-	c.m.Range(func(key interface{}, val interface{}) bool {
-		c.m.Delete(key)
+func (cm *concurrentMap) deleteAll() {
+	cm.m.Range(func(key interface{}, val interface{}) bool {
+		cm.m.Delete(key)
 		return true
 	})
 }
 
-func (c *concurrentMap) deleteExpired() {
-	c.m.Range(func(key interface{}, val interface{}) bool {
+func (cm *concurrentMap) deleteExpired() {
+	cm.m.Range(func(key interface{}, val interface{}) bool {
 		item := val.(item)
 
 		if !item.isValid() {
-			c.m.Delete(key)
+			cm.m.Delete(key)
 		}
 		return true
 	})
 }
 
-func (c *concurrentMap) start(dur time.Duration) {
+func (cm *concurrentMap) start(dur time.Duration) {
 	go func() {
 		t := time.NewTicker(dur)
 
 	END_LOOP:
 		for {
 			select {
-			case _ = <-c.finishWorker:
+			case _ = <-cm.finishWorker:
 				break END_LOOP
 			case _ = <-t.C:
-				c.deleteExpired()
+				cm.deleteExpired()
 			}
 		}
 	}()
