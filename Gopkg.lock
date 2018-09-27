@@ -20,10 +20,16 @@
   version = "v1.0.1"
 
 [[projects]]
-  branch = "master"
+  name = "github.com/cespare/xxhash"
+  packages = ["."]
+  revision = "569f7c8abf1f58d9043ab804d364483cb1c853b6"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/kpango/gache"
   packages = ["."]
   revision = "4f288eba7299ce744bb638cdb34aadf767b5d3cf"
+  version = "v1.0"
 
 [[projects]]
   name = "github.com/patrickmn/go-cache"
@@ -34,6 +40,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "24719412b69379a8b9010f695325586950f878fccee8f305a83102a7c0b092c8"
+  inputs-digest = "2b746528b95fa196d98e1850792abb02238ad1bc15a627532f568be064204ced"
   solver-name = "gps-cdcl"
   solver-version = 1
