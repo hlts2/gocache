@@ -16,7 +16,7 @@ const (
 	DeleteExpiredInterval time.Duration = 10 * time.Second
 
 	// DefaultConcurrentMapCount is the number of elements of concurrent map.
-	DefaultConcurrentMapCount uint64 = 10
+	DefaultConcurrentMapCount uint64 = 256
 )
 
 type concurrentMaps []*concurrentMap
