@@ -6,6 +6,7 @@ import (
 	"unsafe"
 
 	"github.com/cespare/xxhash"
+	"github.com/kpango/fastime"
 )
 
 const (
@@ -177,7 +178,7 @@ func (g *gocache) StartingDeleteExpired() bool {
 }
 
 func (g *item) isValid() bool {
-	return time.Now().UnixNano() < g.expire
+	return fastime.Now().UnixNano() < g.expire
 }
 
 func (cms concurrentMaps) getMap(key string) *concurrentMap {
@@ -205,7 +206,7 @@ func (cm *concurrentMap) set(key string, val interface{}, expire time.Duration) 
 
 	cm.m.Store(key, item{
 		val:    val,
-		expire: time.Now().Add(expire).UnixNano(),
+		expire: fastime.Now().Add(expire).UnixNano(),
 	})
 
 	return true

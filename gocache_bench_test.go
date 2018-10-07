@@ -45,8 +45,6 @@ func BenchmarkGocache(b *testing.B) {
 }
 
 func BenchmarkGache(b *testing.B) {
-	monkey.Unpatch(time.Now)
-
 	g := gache.New()
 
 	b.ResetTimer()
@@ -71,8 +69,6 @@ func BenchmarkGache(b *testing.B) {
 }
 
 func BenchmarkBigCache(b *testing.B) {
-	monkey.Unpatch(time.Now)
-
 	cfg := bigcache.DefaultConfig(10 * time.Minute)
 	cfg.Verbose = false
 	c, _ := bigcache.NewBigCache(cfg)
@@ -99,8 +95,6 @@ func BenchmarkBigCache(b *testing.B) {
 }
 
 func BenchmarkGoCache(b *testing.B) {
-	monkey.Unpatch(time.Now)
-
 	c := cache.New(5*time.Minute, 10*time.Minute)
 
 	b.ResetTimer()
@@ -125,8 +119,6 @@ func BenchmarkGoCache(b *testing.B) {
 }
 
 func BenchmarkGCacheLRU(b *testing.B) {
-	monkey.Unpatch(time.Now)
-
 	gc := gcache.New(20).
 		LRU().
 		Build()
@@ -153,8 +145,6 @@ func BenchmarkGCacheLRU(b *testing.B) {
 }
 
 func BenchmarkGCacheLFU(b *testing.B) {
-	monkey.Unpatch(time.Now)
-
 	gc := gcache.New(20).
 		LFU().
 		Build()
