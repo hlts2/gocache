@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/bouk/monkey"
+	"github.com/kpango/fastime"
 )
 
 func SetNowTime(t time.Time) {
@@ -33,19 +34,19 @@ func TestIsValid(t *testing.T) {
 	}{
 		{
 			item: &item{
-				expire: (time.Now().AddDate(1, 0, 0)).UnixNano(),
+				expire: (fastime.Now().AddDate(1, 0, 0)).UnixNano(),
 			},
 			expected: true,
 		},
 		{
 			item: &item{
-				expire: (time.Now().AddDate(0, 0, 0)).UnixNano(),
+				expire: (fastime.Now().AddDate(0, 0, 0)).UnixNano(),
 			},
 			expected: false,
 		},
 		{
 			item: &item{
-				expire: (time.Now().AddDate(-1, 0, 0)).UnixNano(),
+				expire: (fastime.Now().AddDate(-1, 0, 0)).UnixNano(),
 			},
 			expected: false,
 		},
@@ -161,7 +162,7 @@ func TestGetExpire(t *testing.T) {
 		{
 			key:      "key-1",
 			val:      "key-1_value",
-			expected: time.Now().Add(DefaultExpire).UnixNano(),
+			expected: fastime.Now().Add(DefaultExpire).UnixNano(),
 		},
 	}
 

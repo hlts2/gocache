@@ -242,17 +242,16 @@ func (cm *concurrentMap) deleteExpired() {
 }
 
 func (cm *concurrentMap) start(dur time.Duration) {
-	go func() {
-		t := time.NewTicker(dur)
+	t := time.NewTicker(dur)
 
-	END_LOOP:
-		for {
-			select {
-			case _ = <-cm.finishWorker:
-				break END_LOOP
-			case _ = <-t.C:
-				cm.deleteExpired()
-			}
+END_LOOP:
+	for {
+		select {
+		case _ = <-cm.finishWorker:
+			break END_LOOP
+		case _ = <-t.C:
+			cm.deleteExpired()
 		}
-	}()
+	}
+	t.Stop()
 }
