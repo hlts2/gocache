@@ -61,8 +61,8 @@ type (
 	}
 )
 
-func (g *record) isValid() bool {
-	return fastime.Now().UnixNano() < g.expire
+func (r *record) isValid() bool {
+	return fastime.Now().UnixNano() < r.expire
 }
 
 // New returns Gocache (*gocache) instance.
@@ -100,21 +100,21 @@ func (g *gocache) getShard(key string) *shard {
 }
 
 func (g *gocache) Get(key string) (interface{}, bool) {
-	record, ok := g.getShard(key).get(key)
+	rcd, ok := g.getShard(key).get(key)
 	if !ok {
 		return nil, false
 	}
 
-	return record.val, ok
+	return rcd.val, ok
 }
 
 func (g *gocache) GetExpire(key string) (int64, bool) {
-	record, ok := g.getShard(key).get(key)
+	rcd, ok := g.getShard(key).get(key)
 	if !ok {
 		return 0, false
 	}
 
-	return record.expire, ok
+	return rcd.expire, ok
 }
 
 func (g *gocache) Set(key string, val interface{}) bool {
@@ -144,7 +144,7 @@ func (g *gocache) Clear() {
 }
 
 func (g *gocache) StartDeleteExpired(dur time.Duration) Gocache {
-	if int(dur) <= 0 {
+	if dur <= 0 {
 		return g
 	}
 
@@ -182,18 +182,20 @@ func (g *gocache) StartingDeleteExpired() bool {
 	return false
 }
 
-func (s *shard) get(key string) (record, bool) {
+func (s *shard) get(key string) (*record, bool) {
 	value, ok := s.Load(key)
-	if ok {
-		rcd := value.(record)
-		if rcd.isValid() {
-			return rcd, ok
-		}
-
-		s.Delete(key)
+	if !ok {
+		return nil, false
 	}
 
-	return record{}, false
+	rcd := value.(*record)
+	if rcd.isValid() {
+		return rcd, ok
+	}
+
+	s.Delete(key)
+
+	return nil, false
 }
 
 func (s *shard) set(key string, val interface{}, expire int64) bool {
@@ -201,7 +203,7 @@ func (s *shard) set(key string, val interface{}, expire int64) bool {
 		return false
 	}
 
-	s.Store(key, record{
+	s.Store(key, &record{
 		val:    val,
 		expire: fastime.Now().UnixNano() + expire,
 	})
@@ -222,9 +224,7 @@ func (s *shard) deleteAll() {
 
 func (s *shard) deleteExpired() {
 	s.Range(func(key interface{}, val interface{}) bool {
-		record := val.(record)
-
-		if !record.isValid() {
+		if !val.(*record).isValid() {
 			s.Delete(key)
 		}
 		return true
