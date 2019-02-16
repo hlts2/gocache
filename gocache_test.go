@@ -206,10 +206,7 @@ func TestDelete(t *testing.T) {
 			t.Errorf("tests[%d] - Set ok is wrong. expected: %v, got: %v", i, true, ok)
 		}
 
-		ok = g.Delete(test.key)
-		if !ok {
-			t.Errorf("tests[%d] - Delete ok is wrong. expected: %v, got: %v", i, true, ok)
-		}
+		g.Delete(test.key)
 
 		_, ok = g.Get(test.key)
 		if ok {

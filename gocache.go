@@ -25,7 +25,7 @@ type Gocache interface {
 	SetWithExpire(string, interface{}, time.Duration) bool
 
 	// Delete deletes cache object of given name.
-	Delete(string) bool
+	Delete(string)
 
 	// Clear clears cache.
 	Clear()
@@ -123,9 +123,8 @@ func (g *gocache) SetWithExpire(key string, val interface{}, expire time.Duratio
 	return shard.set(key, val, *(*int64)(unsafe.Pointer(&expire)))
 }
 
-func (g *gocache) Delete(key string) bool {
-	shard := g.getShard(key)
-	return shard.delete(key)
+func (g *gocache) Delete(key string) {
+	g.getShard(key).delete(key)
 }
 
 func (g *gocache) DeleteExpired() {
@@ -210,15 +209,8 @@ func (s *shard) set(key string, val interface{}, expire int64) bool {
 	return true
 }
 
-func (s *shard) delete(key string) bool {
-	_, ok := s.Load(key)
-	if !ok {
-		return false
-	}
-
+func (s *shard) delete(key string) {
 	s.Delete(key)
-
-	return true
 }
 
 func (s *shard) deleteAll() {
