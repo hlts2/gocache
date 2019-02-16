@@ -47,7 +47,7 @@ type (
 	shard struct {
 		*sync.Map
 		startingWorker bool
-		finishWorker   chan bool
+		doneCh         chan struct{}
 	}
 
 	shards []*shard
@@ -88,7 +88,7 @@ func newDefaultShard() *shard {
 	return &shard{
 		Map:            new(sync.Map),
 		startingWorker: false,
-		finishWorker:   make(chan bool),
+		doneCh:         make(chan struct{}),
 	}
 }
 
@@ -162,7 +162,7 @@ func (g *gocache) StartExpired(dur time.Duration) Gocache {
 func (g *gocache) StopExpired() Gocache {
 	for _, shard := range g.shards {
 		if shard.startingWorker {
-			shard.finishWorker <- true
+			shard.doneCh <- struct{}{}
 			shard.startingWorker = false
 		}
 	}
@@ -225,7 +225,7 @@ func (s *shard) start(dur time.Duration) {
 END_LOOP:
 	for {
 		select {
-		case _ = <-s.finishWorker:
+		case _ = <-s.doneCh:
 			break END_LOOP
 		case _ = <-t.C:
 			s.deleteExpired()
