@@ -30,15 +30,12 @@ type Gocache interface {
 	// Clear clears cache.
 	Clear()
 
-	// StartDeleteExpired starts worker that deletes an expired cache object.
+	// StartExpired starts worker that deletes an expired cache object.
 	// Deletion processing is executed at intervals of given time.
-	StartDeleteExpired(dur time.Duration) Gocache
+	StartExpired(dur time.Duration) Gocache
 
-	// StopDeleteExpired stop worker that deletes an expired cache object.
-	StopDeleteExpired() Gocache
-
-	// StartingDeleteExpired returns true if the worker that deletes expired record is running, returns false otherwise.
-	StartingDeleteExpired() bool
+	// StopExpired stop worker that deletes an expired cache object.
+	StopExpired() Gocache
 }
 
 type (
@@ -143,7 +140,7 @@ func (g *gocache) Clear() {
 	}
 }
 
-func (g *gocache) StartDeleteExpired(dur time.Duration) Gocache {
+func (g *gocache) StartExpired(dur time.Duration) Gocache {
 	if dur <= 0 {
 		return g
 	}
@@ -162,7 +159,7 @@ func (g *gocache) StartDeleteExpired(dur time.Duration) Gocache {
 	return g
 }
 
-func (g *gocache) StopDeleteExpired() Gocache {
+func (g *gocache) StopExpired() Gocache {
 	for _, shard := range g.shards {
 		if shard.startingWorker {
 			shard.finishWorker <- true
@@ -171,15 +168,6 @@ func (g *gocache) StopDeleteExpired() Gocache {
 	}
 
 	return g
-}
-
-func (g *gocache) StartingDeleteExpired() bool {
-	for _, shard := range g.shards {
-		if shard.startingWorker {
-			return true
-		}
-	}
-	return false
 }
 
 func (s *shard) get(key string) (*record, bool) {
