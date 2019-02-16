@@ -9,132 +9,137 @@ import (
 	"github.com/kpango/fastime"
 )
 
-const (
-	// DefaultExpire is default expiration date.
-	DefaultExpire time.Duration = 50 * time.Second
+// Gocache is base gocache interface.
+type Gocache interface {
 
-	// DeleteExpiredInterval is the default interval at which the worker deltes all expired cache objects
-	DeleteExpiredInterval time.Duration = 10 * time.Second
+	// Get returns object with the given name from the cache.
+	Get(string) (interface{}, bool)
 
-	// DefaultConcurrentMapCount is the number of elements of concurrent map.
-	DefaultConcurrentMapCount int = 256
-)
+	// GetExpire returns expiration date of cache object of given the name.
+	GetExpire(string) (int64, bool)
 
-type concurrentMaps []*concurrentMap
+	// Set sets object in the cache.
+	Set(string, interface{}) bool
+
+	// SetWithExpire sets object in cache with an expiration date.
+	SetWithExpire(string, interface{}, time.Duration) bool
+
+	// Delete deletes cache object of given name.
+	Delete(string)
+
+	// Clear clears cache.
+	Clear()
+
+	// StartDeleteExpired starts worker that deletes an expired cache object.
+	// Deletion processing is executed at intervals of given time.
+	StartDeleteExpired(dur time.Duration) Gocache
+
+	// StopDeleteExpired stop worker that deletes an expired cache object.
+	StopDeleteExpired() Gocache
+
+	// StartingDeleteExpired returns true if the worker that deletes expired record is running, returns false otherwise.
+	StartingDeleteExpired() bool
+}
 
 type (
-
-	// Gocache is base gocache interface.
-	Gocache interface {
-
-		// Get returns object with the given name from the cache.
-		Get(string) (interface{}, bool)
-
-		// GetExpire returns expiration date of cache object of given the name.
-		GetExpire(string) (int64, bool)
-
-		// Set sets object in the cache.
-		Set(string, interface{}) bool
-
-		// SetWithExpire sets object in cache with an expiration date.
-		SetWithExpire(string, interface{}, time.Duration) bool
-
-		// Delete deletes cache object of given name.
-		Delete(string) bool
-
-		// Clear clears cache.
-		Clear()
-
-		// StartDeleteExpired starts worker that deletes an expired cache object.
-		// Deletion processing is executed at intervals of given time.
-		StartDeleteExpired(dur time.Duration) Gocache
-
-		// StopDeleteExpired stop worker that deletes an expired cache object.
-		StopDeleteExpired() Gocache
-
-		// StartingDeleteExpired returns true if the worker that deletes expired item is running, returns false otherwise.
-		StartingDeleteExpired() bool
-	}
-
 	gocache struct {
-		concurrentMaps
+		shards shards
+		*config
 	}
 
-	concurrentMap struct {
-		m              *sync.Map
+	shard struct {
+		*sync.Map
 		startingWorker bool
 		finishWorker   chan bool
 	}
 
-	item struct {
-		expire int64
+	shards []*shard
+
+	record struct {
 		val    interface{}
+		expire int64
 	}
 )
 
+func (g *record) isValid() bool {
+	return fastime.Now().UnixNano() < g.expire
+}
+
 // New returns Gocache (*gocache) instance.
-func New() Gocache {
-	g := &gocache{
-		concurrentMaps: make(concurrentMaps, DefaultConcurrentMapCount),
+func New(options ...Option) Gocache {
+	g := newDefaultGocache()
+
+	for _, opt := range options {
+		opt(g)
 	}
 
-	for i := 0; i < int(DefaultConcurrentMapCount); i++ {
-		g.concurrentMaps[i] = &concurrentMap{
-			m:              new(sync.Map),
-			startingWorker: false,
-			finishWorker:   make(chan bool),
-		}
+	for i := 0; i < DefaultShardsCount; i++ {
+		g.shards[i] = newDefaultShard()
 	}
 
 	return g
 }
 
-func (g *gocache) Get(key string) (interface{}, bool) {
-	cm := g.concurrentMaps.getMap(key)
+func newDefaultGocache() *gocache {
+	return &gocache{
+		shards: make(shards, DefaultShardsCount),
+		config: newDefaultConfig(),
+	}
+}
 
-	item, ok := cm.get(key)
+func newDefaultShard() *shard {
+	return &shard{
+		Map:            new(sync.Map),
+		startingWorker: false,
+		finishWorker:   make(chan bool),
+	}
+}
+
+func (g *gocache) getShard(key string) *shard {
+	return g.shards[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%g.ShardsCount]
+}
+
+func (g *gocache) Get(key string) (interface{}, bool) {
+	record, ok := g.getShard(key).get(key)
 	if !ok {
 		return nil, false
 	}
 
-	return item.val, ok
+	return record.val, ok
 }
 
 func (g *gocache) GetExpire(key string) (int64, bool) {
-	cm := g.concurrentMaps.getMap(key)
-
-	item, ok := cm.get(key)
+	record, ok := g.getShard(key).get(key)
 	if !ok {
 		return 0, false
 	}
 
-	return item.expire, ok
+	return record.expire, ok
 }
 
 func (g *gocache) Set(key string, val interface{}) bool {
-	cm := g.concurrentMaps.getMap(key)
-	return cm.set(key, val, DefaultExpire)
+	shard := g.getShard(key)
+	return shard.set(key, val, g.Expire)
 }
 
 func (g *gocache) SetWithExpire(key string, val interface{}, expire time.Duration) bool {
-	cm := g.concurrentMaps.getMap(key)
-	return cm.set(key, val, expire)
+	shard := g.getShard(key)
+	return shard.set(key, val, *(*int64)(unsafe.Pointer(&expire)))
 }
 
-func (g *gocache) Delete(key string) bool {
-	cm := g.concurrentMaps.getMap(key)
-	return cm.delete(key)
+func (g *gocache) Delete(key string) {
+	g.getShard(key).delete(key)
 }
 
 func (g *gocache) DeleteExpired() {
-	for _, cm := range g.concurrentMaps {
-		cm.deleteExpired()
+	for _, shard := range g.shards {
+		shard.deleteExpired()
 	}
 }
 
 func (g *gocache) Clear() {
-	for _, cm := range g.concurrentMaps {
-		cm.deleteAll()
+	for _, shard := range g.shards {
+		shard.deleteAll()
 	}
 }
 
@@ -143,25 +148,25 @@ func (g *gocache) StartDeleteExpired(dur time.Duration) Gocache {
 		return g
 	}
 
-	for _, cm := range g.concurrentMaps {
-		if cm.startingWorker {
+	for _, shard := range g.shards {
+		if shard.startingWorker {
 			return g
 		}
 	}
 
-	for _, cm := range g.concurrentMaps {
-		cm.startingWorker = true
-		go cm.start(dur)
+	for _, shard := range g.shards {
+		shard.startingWorker = true
+		go shard.start(dur)
 	}
 
 	return g
 }
 
 func (g *gocache) StopDeleteExpired() Gocache {
-	for _, cm := range g.concurrentMaps {
-		if cm.startingWorker {
-			cm.finishWorker <- true
-			cm.startingWorker = false
+	for _, shard := range g.shards {
+		if shard.startingWorker {
+			shard.finishWorker <- true
+			shard.startingWorker = false
 		}
 	}
 
@@ -169,88 +174,73 @@ func (g *gocache) StopDeleteExpired() Gocache {
 }
 
 func (g *gocache) StartingDeleteExpired() bool {
-	for _, cm := range g.concurrentMaps {
-		if cm.startingWorker {
+	for _, shard := range g.shards {
+		if shard.startingWorker {
 			return true
 		}
 	}
 	return false
 }
 
-func (g *item) isValid() bool {
-	return fastime.Now().UnixNano() < g.expire
-}
-
-func (cms concurrentMaps) getMap(key string) *concurrentMap {
-	return cms[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%uint64(DefaultConcurrentMapCount)]
-}
-
-func (cm *concurrentMap) get(key string) (item, bool) {
-	value, ok := cm.m.Load(key)
+func (s *shard) get(key string) (record, bool) {
+	value, ok := s.Load(key)
 	if ok {
-		i := value.(item)
-		if i.isValid() {
-			return i, ok
+		rcd := value.(record)
+		if rcd.isValid() {
+			return rcd, ok
 		}
 
-		cm.m.Delete(key)
+		s.Delete(key)
 	}
 
-	return item{}, false
+	return record{}, false
 }
 
-func (cm *concurrentMap) set(key string, val interface{}, expire time.Duration) bool {
+func (s *shard) set(key string, val interface{}, expire int64) bool {
 	if expire <= 0 {
 		return false
 	}
 
-	cm.m.Store(key, item{
+	s.Store(key, record{
 		val:    val,
-		expire: fastime.Now().Add(expire).UnixNano(),
+		expire: fastime.Now().UnixNano() + expire,
 	})
 
 	return true
 }
 
-func (cm *concurrentMap) delete(key string) bool {
-	_, ok := cm.m.Load(key)
-	if !ok {
-		return false
-	}
-
-	cm.m.Delete(key)
-
-	return true
+func (s *shard) delete(key string) {
+	s.Delete(key)
 }
 
-func (cm *concurrentMap) deleteAll() {
-	cm.m.Range(func(key interface{}, val interface{}) bool {
-		cm.m.Delete(key)
+func (s *shard) deleteAll() {
+	s.Range(func(key interface{}, val interface{}) bool {
+		s.Delete(key)
 		return true
 	})
 }
 
-func (cm *concurrentMap) deleteExpired() {
-	cm.m.Range(func(key interface{}, val interface{}) bool {
-		item := val.(item)
+func (s *shard) deleteExpired() {
+	s.Range(func(key interface{}, val interface{}) bool {
+		record := val.(record)
 
-		if !item.isValid() {
-			cm.m.Delete(key)
+		if !record.isValid() {
+			s.Delete(key)
 		}
 		return true
 	})
 }
 
-func (cm *concurrentMap) start(dur time.Duration) {
+func (s *shard) start(dur time.Duration) {
 	t := time.NewTicker(dur)
 
 END_LOOP:
 	for {
 		select {
-		case _ = <-cm.finishWorker:
+		case _ = <-s.finishWorker:
 			break END_LOOP
 		case _ = <-t.C:
-			cm.deleteExpired()
+			s.deleteExpired()
 		}
 	}
 	t.Stop()
