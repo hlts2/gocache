@@ -66,8 +66,8 @@ type (
 	shards []*shard
 
 	record struct {
-		expire int64
 		val    interface{}
+		expire int64
 	}
 )
 
@@ -88,8 +88,12 @@ func New() Gocache {
 	return g
 }
 
+func (g *gocache) getShard(key string) *shard {
+	return g.shards[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%uint64(DefaultShardsCountt)]
+}
+
 func (g *gocache) Get(key string) (interface{}, bool) {
-	shard := g.shards.getShard(key)
+	shard := g.getShard(key)
 
 	record, ok := shard.get(key)
 	if !ok {
@@ -100,7 +104,7 @@ func (g *gocache) Get(key string) (interface{}, bool) {
 }
 
 func (g *gocache) GetExpire(key string) (int64, bool) {
-	shard := g.shards.getShard(key)
+	shard := g.getShard(key)
 
 	record, ok := shard.get(key)
 	if !ok {
@@ -111,17 +115,17 @@ func (g *gocache) GetExpire(key string) (int64, bool) {
 }
 
 func (g *gocache) Set(key string, val interface{}) bool {
-	shard := g.shards.getShard(key)
+	shard := g.getShard(key)
 	return shard.set(key, val, DefaultExpire)
 }
 
 func (g *gocache) SetWithExpire(key string, val interface{}, expire time.Duration) bool {
-	shard := g.shards.getShard(key)
+	shard := g.getShard(key)
 	return shard.set(key, val, expire)
 }
 
 func (g *gocache) Delete(key string) bool {
-	shard := g.shards.getShard(key)
+	shard := g.getShard(key)
 	return shard.delete(key)
 }
 
@@ -178,10 +182,6 @@ func (g *gocache) StartingDeleteExpired() bool {
 
 func (g *record) isValid() bool {
 	return fastime.Now().UnixNano() < g.expire
-}
-
-func (ss shards) getShard(key string) *shard {
-	return ss[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%uint64(DefaultShardsCountt)]
 }
 
 func (s *shard) get(key string) (record, bool) {
