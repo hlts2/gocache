@@ -61,8 +61,8 @@ type (
 	}
 )
 
-func (g record) isValid() bool {
-	return fastime.Now().UnixNano() < g.expire
+func (r *record) isValid() bool {
+	return fastime.Now().UnixNano() < r.expire
 }
 
 // New returns Gocache (*gocache) instance.
@@ -182,10 +182,10 @@ func (g *gocache) StartingDeleteExpired() bool {
 	return false
 }
 
-func (s *shard) get(key string) (record, bool) {
+func (s *shard) get(key string) (*record, bool) {
 	value, ok := s.Load(key)
 	if ok {
-		rcd := value.(record)
+		rcd := value.(*record)
 		if rcd.isValid() {
 			return rcd, ok
 		}
@@ -193,7 +193,7 @@ func (s *shard) get(key string) (record, bool) {
 		s.Delete(key)
 	}
 
-	return record{}, false
+	return nil, false
 }
 
 func (s *shard) set(key string, val interface{}, expire int64) bool {
@@ -201,7 +201,7 @@ func (s *shard) set(key string, val interface{}, expire int64) bool {
 		return false
 	}
 
-	s.Store(key, record{
+	s.Store(key, &record{
 		val:    val,
 		expire: fastime.Now().UnixNano() + expire,
 	})
@@ -222,7 +222,7 @@ func (s *shard) deleteAll() {
 
 func (s *shard) deleteExpired() {
 	s.Range(func(key interface{}, val interface{}) bool {
-		if !val.(record).isValid() {
+		if !val.(*record).isValid() {
 			s.Delete(key)
 		}
 		return true
