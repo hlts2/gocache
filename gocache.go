@@ -61,7 +61,7 @@ type (
 	}
 )
 
-func (g *record) isValid() bool {
+func (g record) isValid() bool {
 	return fastime.Now().UnixNano() < g.expire
 }
 
@@ -100,21 +100,21 @@ func (g *gocache) getShard(key string) *shard {
 }
 
 func (g *gocache) Get(key string) (interface{}, bool) {
-	record, ok := g.getShard(key).get(key)
+	rcd, ok := g.getShard(key).get(key)
 	if !ok {
 		return nil, false
 	}
 
-	return record.val, ok
+	return rcd.val, ok
 }
 
 func (g *gocache) GetExpire(key string) (int64, bool) {
-	record, ok := g.getShard(key).get(key)
+	rcd, ok := g.getShard(key).get(key)
 	if !ok {
 		return 0, false
 	}
 
-	return record.expire, ok
+	return rcd.expire, ok
 }
 
 func (g *gocache) Set(key string, val interface{}) bool {
@@ -144,7 +144,7 @@ func (g *gocache) Clear() {
 }
 
 func (g *gocache) StartDeleteExpired(dur time.Duration) Gocache {
-	if int(dur) <= 0 {
+	if dur <= 0 {
 		return g
 	}
 
@@ -222,9 +222,7 @@ func (s *shard) deleteAll() {
 
 func (s *shard) deleteExpired() {
 	s.Range(func(key interface{}, val interface{}) bool {
-		record := val.(record)
-
-		if !record.isValid() {
+		if !val.(record).isValid() {
 			s.Delete(key)
 		}
 		return true
