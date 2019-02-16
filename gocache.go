@@ -184,14 +184,16 @@ func (g *gocache) StartingDeleteExpired() bool {
 
 func (s *shard) get(key string) (*record, bool) {
 	value, ok := s.Load(key)
-	if ok {
-		rcd := value.(*record)
-		if rcd.isValid() {
-			return rcd, ok
-		}
-
-		s.Delete(key)
+	if !ok {
+		return nil, false
 	}
+
+	rcd := value.(*record)
+	if rcd.isValid() {
+		return rcd, ok
+	}
+
+	s.Delete(key)
 
 	return nil, false
 }
