@@ -29,23 +29,23 @@ func TestNew(t *testing.T) {
 
 func TestIsValid(t *testing.T) {
 	tests := []struct {
-		item     *item
+		record   *record
 		expected bool
 	}{
 		{
-			item: &item{
+			record: &record{
 				expire: (fastime.Now().AddDate(1, 0, 0)).UnixNano(),
 			},
 			expected: true,
 		},
 		{
-			item: &item{
+			record: &record{
 				expire: (fastime.Now().AddDate(0, 0, 0)).UnixNano(),
 			},
 			expected: false,
 		},
 		{
-			item: &item{
+			record: &record{
 				expire: (fastime.Now().AddDate(-1, 0, 0)).UnixNano(),
 			},
 			expected: false,
@@ -53,7 +53,7 @@ func TestIsValid(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		got := test.item.isValid()
+		got := test.record.isValid()
 
 		if test.expected != got {
 			t.Errorf("tests[%d] - value.isValid is wrong. expected: %v, got: %v", i, test.expected, got)
