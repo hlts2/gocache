@@ -16,8 +16,8 @@ const (
 	// DeleteExpiredInterval is the default interval at which the worker deltes all expired cache objects
 	DeleteExpiredInterval = 10 * time.Second
 
-	// DefaultShardsCountt is the number of elements of concurrent map.
-	DefaultShardsCountt = 256
+	// DefaultShardsCount is the number of elements of concurrent map.
+	DefaultShardsCount = 256
 )
 
 // Gocache is base gocache interface.
@@ -55,6 +55,7 @@ type Gocache interface {
 type (
 	gocache struct {
 		shards shards
+		expire int64
 	}
 
 	shard struct {
@@ -72,24 +73,37 @@ type (
 )
 
 // New returns Gocache (*gocache) instance.
-func New() Gocache {
-	g := &gocache{
-		shards: make(shards, DefaultShardsCountt),
+func New(options ...Option) Gocache {
+	g := newDefaultGocache()
+
+	for _, opt := range options {
+		opt(g)
 	}
 
-	for i := 0; i < int(DefaultShardsCountt); i++ {
-		g.shards[i] = &shard{
-			Map:            new(sync.Map),
-			startingWorker: false,
-			finishWorker:   make(chan bool),
-		}
+	for i := 0; i < int(DefaultShardsCount); i++ {
+		g.shards[i] = newDefaultShard()
 	}
 
 	return g
 }
 
+func newDefaultGocache() *gocache {
+	return &gocache{
+		shards: make(shards, DefaultShardsCount),
+		expire: int64(DefaultExpire),
+	}
+}
+
+func newDefaultShard() *shard {
+	return &shard{
+		Map:            new(sync.Map),
+		startingWorker: false,
+		finishWorker:   make(chan bool),
+	}
+}
+
 func (g *gocache) getShard(key string) *shard {
-	return g.shards[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%uint64(DefaultShardsCountt)]
+	return g.shards[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%uint64(DefaultShardsCount)]
 }
 
 func (g *gocache) Get(key string) (interface{}, bool) {
@@ -112,12 +126,12 @@ func (g *gocache) GetExpire(key string) (int64, bool) {
 
 func (g *gocache) Set(key string, val interface{}) bool {
 	shard := g.getShard(key)
-	return shard.set(key, val, DefaultExpire)
+	return shard.set(key, val, g.expire)
 }
 
 func (g *gocache) SetWithExpire(key string, val interface{}, expire time.Duration) bool {
 	shard := g.getShard(key)
-	return shard.set(key, val, expire)
+	return shard.set(key, val, *(*int64)(unsafe.Pointer(&expire)))
 }
 
 func (g *gocache) Delete(key string) bool {
@@ -194,14 +208,14 @@ func (s *shard) get(key string) (record, bool) {
 	return record{}, false
 }
 
-func (s *shard) set(key string, val interface{}, expire time.Duration) bool {
+func (s *shard) set(key string, val interface{}, expire int64) bool {
 	if expire <= 0 {
 		return false
 	}
 
 	s.Store(key, record{
 		val:    val,
-		expire: fastime.Now().Add(expire).UnixNano(),
+		expire: fastime.Now().UnixNano() + expire,
 	})
 
 	return true
