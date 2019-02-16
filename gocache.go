@@ -24,16 +24,16 @@ type concurrentMaps []*concurrentMap
 
 type (
 
-	// Gocache is core gocache interface type.
+	// Gocache is base gocache interface.
 	Gocache interface {
 
-		// Get returns cache object of given the name.
+		// Get returns object with the given name from the cache.
 		Get(string) (interface{}, bool)
 
 		// GetExpire returns expiration date of cache object of given the name.
 		GetExpire(string) (int64, bool)
 
-		// Set sets object in th cache.
+		// Set sets object in the cache.
 		Set(string, interface{}) bool
 
 		// SetWithExpire sets object in cache with an expiration date.
@@ -75,15 +75,15 @@ type (
 // New returns Gocache (*gocache) instance.
 func New() Gocache {
 	g := &gocache{
-		concurrentMaps: make(concurrentMaps, 0, DefaultConcurrentMapCount),
+		concurrentMaps: make(concurrentMaps, DefaultConcurrentMapCount),
 	}
 
 	for i := 0; i < int(DefaultConcurrentMapCount); i++ {
-		g.concurrentMaps = append(g.concurrentMaps, &concurrentMap{
+		g.concurrentMaps[i] = &concurrentMap{
 			m:              new(sync.Map),
 			startingWorker: false,
 			finishWorker:   make(chan bool),
-		})
+		}
 	}
 
 	return g
