@@ -67,7 +67,7 @@ func New(options ...Option) Gocache {
 		opt(g)
 	}
 
-	for i := 0; i < DefaultShardsCount; i++ {
+	for i := 0; i < int(g.ShardsCount); i++ {
 		g.shards[i] = newDefaultShard()
 	}
 

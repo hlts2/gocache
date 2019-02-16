@@ -4,13 +4,15 @@ import "time"
 
 const (
 	// DefaultExpire is default expiration date.
-	DefaultExpire = 50 * time.Second
+	DefaultExpire = int64(50 * time.Second)
 
 	// DeleteExpiredInterval is the default interval at which the worker deltes all expired cache objects
-	DeleteExpiredInterval = 10 * time.Second
+	DeleteExpiredInterval = int64(10 * time.Second)
 
 	// DefaultShardsCount is the number of elements of concurrent map.
-	DefaultShardsCount = 256
+	DefaultShardsCount uint64 = 256
+
+	s = 1 * time.Second
 )
 
 type config struct {
@@ -21,8 +23,8 @@ type config struct {
 
 func newDefaultConfig() *config {
 	return &config{
-		ShardsCount:           uint64(DefaultShardsCount),
-		Expire:                int64(DefaultExpire),
-		DeleteExpiredInterval: int64(DeleteExpiredInterval),
+		ShardsCount:           DefaultShardsCount,
+		Expire:                DefaultExpire,
+		DeleteExpiredInterval: DeleteExpiredInterval,
 	}
 }
