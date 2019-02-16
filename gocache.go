@@ -16,8 +16,8 @@ const (
 	// DeleteExpiredInterval is the default interval at which the worker deltes all expired cache objects
 	DeleteExpiredInterval = 10 * time.Second
 
-	// DefaultConcurrentMapCount is the number of elements of concurrent map.
-	DefaultConcurrentMapCount = 256
+	// DefaultShardsCountt is the number of elements of concurrent map.
+	DefaultShardsCountt = 256
 )
 
 // Gocache is base gocache interface.
@@ -74,10 +74,10 @@ type (
 // New returns Gocache (*gocache) instance.
 func New() Gocache {
 	g := &gocache{
-		shards: make(shards, DefaultConcurrentMapCount),
+		shards: make(shards, DefaultShardsCountt),
 	}
 
-	for i := 0; i < int(DefaultConcurrentMapCount); i++ {
+	for i := 0; i < int(DefaultShardsCountt); i++ {
 		g.shards[i] = &shard{
 			Map:            new(sync.Map),
 			startingWorker: false,
@@ -181,7 +181,7 @@ func (g *record) isValid() bool {
 }
 
 func (ss shards) getShard(key string) *shard {
-	return ss[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%uint64(DefaultConcurrentMapCount)]
+	return ss[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%uint64(DefaultShardsCountt)]
 }
 
 func (s *shard) get(key string) (record, bool) {
