@@ -58,7 +58,7 @@ type (
 	}
 
 	shard struct {
-		m              *sync.Map
+		*sync.Map
 		startingWorker bool
 		finishWorker   chan bool
 	}
@@ -79,7 +79,7 @@ func New() Gocache {
 
 	for i := 0; i < int(DefaultConcurrentMapCount); i++ {
 		g.shards[i] = &shard{
-			m:              new(sync.Map),
+			Map:            new(sync.Map),
 			startingWorker: false,
 			finishWorker:   make(chan bool),
 		}
@@ -185,14 +185,14 @@ func (ss shards) getShard(key string) *shard {
 }
 
 func (s *shard) get(key string) (record, bool) {
-	value, ok := s.m.Load(key)
+	value, ok := s.Load(key)
 	if ok {
 		i := value.(record)
 		if i.isValid() {
 			return i, ok
 		}
 
-		s.m.Delete(key)
+		s.Delete(key)
 	}
 
 	return record{}, false
@@ -203,7 +203,7 @@ func (s *shard) set(key string, val interface{}, expire time.Duration) bool {
 		return false
 	}
 
-	s.m.Store(key, record{
+	s.Store(key, record{
 		val:    val,
 		expire: fastime.Now().Add(expire).UnixNano(),
 	})
@@ -212,29 +212,29 @@ func (s *shard) set(key string, val interface{}, expire time.Duration) bool {
 }
 
 func (s *shard) delete(key string) bool {
-	_, ok := s.m.Load(key)
+	_, ok := s.Load(key)
 	if !ok {
 		return false
 	}
 
-	s.m.Delete(key)
+	s.Delete(key)
 
 	return true
 }
 
 func (s *shard) deleteAll() {
-	s.m.Range(func(key interface{}, val interface{}) bool {
-		s.m.Delete(key)
+	s.Range(func(key interface{}, val interface{}) bool {
+		s.Delete(key)
 		return true
 	})
 }
 
 func (s *shard) deleteExpired() {
-	s.m.Range(func(key interface{}, val interface{}) bool {
+	s.Range(func(key interface{}, val interface{}) bool {
 		record := val.(record)
 
 		if !record.isValid() {
-			s.m.Delete(key)
+			s.Delete(key)
 		}
 		return true
 	})
