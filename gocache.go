@@ -17,7 +17,7 @@ const (
 	DeleteExpiredInterval time.Duration = 10 * time.Second
 
 	// DefaultConcurrentMapCount is the number of elements of concurrent map.
-	DefaultConcurrentMapCount uint64 = 256
+	DefaultConcurrentMapCount int = 256
 )
 
 type concurrentMaps []*concurrentMap
@@ -182,7 +182,7 @@ func (g *item) isValid() bool {
 }
 
 func (cms concurrentMaps) getMap(key string) *concurrentMap {
-	return cms[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%DefaultConcurrentMapCount]
+	return cms[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%uint64(DefaultConcurrentMapCount)]
 }
 
 func (cm *concurrentMap) get(key string) (item, bool) {
