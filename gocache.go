@@ -61,6 +61,10 @@ type (
 	}
 )
 
+func (g *record) isValid() bool {
+	return fastime.Now().UnixNano() < g.expire
+}
+
 // New returns Gocache (*gocache) instance.
 func New(options ...Option) Gocache {
 	g := newDefaultGocache()
@@ -176,10 +180,6 @@ func (g *gocache) StartingDeleteExpired() bool {
 		}
 	}
 	return false
-}
-
-func (g *record) isValid() bool {
-	return fastime.Now().UnixNano() < g.expire
 }
 
 func (s *shard) get(key string) (record, bool) {
