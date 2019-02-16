@@ -11,6 +11,6 @@ type Option func(g *gocache)
 // WithExpireAt returns an Option that set the expire
 func WithExpireAt(d time.Duration) Option {
 	return func(g *gocache) {
-		g.expire = *(*int64)(unsafe.Pointer(&d))
+		g.Expire = *(*int64)(unsafe.Pointer(&d))
 	}
 }

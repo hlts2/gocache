@@ -9,17 +9,6 @@ import (
 	"github.com/kpango/fastime"
 )
 
-const (
-	// DefaultExpire is default expiration date.
-	DefaultExpire = 50 * time.Second
-
-	// DeleteExpiredInterval is the default interval at which the worker deltes all expired cache objects
-	DeleteExpiredInterval = 10 * time.Second
-
-	// DefaultShardsCount is the number of elements of concurrent map.
-	DefaultShardsCount = 256
-)
-
 // Gocache is base gocache interface.
 type Gocache interface {
 
@@ -55,7 +44,7 @@ type Gocache interface {
 type (
 	gocache struct {
 		shards shards
-		expire int64
+		*config
 	}
 
 	shard struct {
@@ -80,7 +69,7 @@ func New(options ...Option) Gocache {
 		opt(g)
 	}
 
-	for i := 0; i < int(DefaultShardsCount); i++ {
+	for i := 0; i < DefaultShardsCount; i++ {
 		g.shards[i] = newDefaultShard()
 	}
 
@@ -90,7 +79,7 @@ func New(options ...Option) Gocache {
 func newDefaultGocache() *gocache {
 	return &gocache{
 		shards: make(shards, DefaultShardsCount),
-		expire: int64(DefaultExpire),
+		config: newDefaultConfig(),
 	}
 }
 
@@ -103,7 +92,7 @@ func newDefaultShard() *shard {
 }
 
 func (g *gocache) getShard(key string) *shard {
-	return g.shards[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%uint64(DefaultShardsCount)]
+	return g.shards[xxhash.Sum64(*(*[]byte)(unsafe.Pointer(&key)))%g.ShardsCount]
 }
 
 func (g *gocache) Get(key string) (interface{}, bool) {
@@ -126,7 +115,7 @@ func (g *gocache) GetExpire(key string) (int64, bool) {
 
 func (g *gocache) Set(key string, val interface{}) bool {
 	shard := g.getShard(key)
-	return shard.set(key, val, g.expire)
+	return shard.set(key, val, g.Expire)
 }
 
 func (g *gocache) SetWithExpire(key string, val interface{}, expire time.Duration) bool {
