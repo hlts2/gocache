@@ -11,13 +11,13 @@ import (
 
 const (
 	// DefaultExpire is default expiration date.
-	DefaultExpire time.Duration = 50 * time.Second
+	DefaultExpire = 50 * time.Second
 
 	// DeleteExpiredInterval is the default interval at which the worker deltes all expired cache objects
-	DeleteExpiredInterval time.Duration = 10 * time.Second
+	DeleteExpiredInterval = 10 * time.Second
 
 	// DefaultConcurrentMapCount is the number of elements of concurrent map.
-	DefaultConcurrentMapCount int = 256
+	DefaultConcurrentMapCount = 256
 )
 
 // Gocache is base gocache interface.
