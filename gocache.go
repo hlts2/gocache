@@ -209,15 +209,17 @@ func (s *shard) deleteExpired() {
 
 func (s *shard) start(dur time.Duration) {
 	t := time.NewTicker(dur)
+	defer func() {
+		t.Stop()
+		close(s.doneCh)
+	}()
 
-END_LOOP:
 	for {
 		select {
 		case _ = <-s.doneCh:
-			break END_LOOP
+			return
 		case _ = <-t.C:
 			s.deleteExpired()
 		}
 	}
-	t.Stop()
 }
