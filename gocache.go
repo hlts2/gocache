@@ -15,9 +15,6 @@ type Gocache interface {
 	// Get returns object with the given name from the cache.
 	Get(string) (interface{}, bool)
 
-	// GetExpire returns expiration date of cache object of given the name.
-	GetExpire(string) (int64, bool)
-
 	// Set sets object in the cache.
 	Set(string, interface{}) bool
 
@@ -103,15 +100,6 @@ func (g *gocache) Get(key string) (interface{}, bool) {
 	}
 
 	return rcd.val, ok
-}
-
-func (g *gocache) GetExpire(key string) (int64, bool) {
-	rcd, ok := g.getShard(key).get(key)
-	if !ok {
-		return 0, false
-	}
-
-	return rcd.expire, ok
 }
 
 func (g *gocache) Set(key string, val interface{}) bool {
