@@ -54,7 +54,7 @@ type Gocache interface {
 
 type (
 	gocache struct {
-		shards
+		shards shards
 	}
 
 	shard struct {
