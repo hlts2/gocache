@@ -93,9 +93,7 @@ func (g *gocache) getShard(key string) *shard {
 }
 
 func (g *gocache) Get(key string) (interface{}, bool) {
-	shard := g.getShard(key)
-
-	record, ok := shard.get(key)
+	record, ok := g.getShard(key).get(key)
 	if !ok {
 		return nil, false
 	}
@@ -104,9 +102,7 @@ func (g *gocache) Get(key string) (interface{}, bool) {
 }
 
 func (g *gocache) GetExpire(key string) (int64, bool) {
-	shard := g.getShard(key)
-
-	record, ok := shard.get(key)
+	record, ok := g.getShard(key).get(key)
 	if !ok {
 		return 0, false
 	}
