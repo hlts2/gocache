@@ -91,7 +91,15 @@ func (g *gocache) getShard(key string) *shard {
 }
 
 func (g *gocache) Get(key string) (interface{}, bool) {
-	return g.get(g.getShard(key), key)
+	shard := g.getShard(key)
+	val, ok := g.get(shard, key)
+	if ok {
+		return val, ok
+	}
+
+	g.delete(shard, key)
+
+	return nil, false
 }
 
 func (g *gocache) get(shard *shard, key string) (interface{}, bool) {
@@ -104,8 +112,6 @@ func (g *gocache) get(shard *shard, key string) (interface{}, bool) {
 	if r.isValid() {
 		return r.val, true
 	}
-
-	g.delete(shard, key)
 
 	return nil, false
 }
