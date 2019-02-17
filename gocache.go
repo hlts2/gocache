@@ -94,12 +94,12 @@ func (g *gocache) getShard(key string) *shard {
 }
 
 func (g *gocache) Get(key string) (interface{}, bool) {
-	rcd, ok := g.getShard(key).get(key)
+	val, ok := g.getShard(key).get(key)
 	if !ok {
 		return nil, false
 	}
 
-	return rcd.val, ok
+	return val, ok
 }
 
 func (g *gocache) Set(key string, val interface{}) bool {
@@ -158,15 +158,15 @@ func (g *gocache) StopExpired() Gocache {
 	return g
 }
 
-func (s *shard) get(key string) (*record, bool) {
-	value, ok := s.Load(key)
+func (s *shard) get(key string) (interface{}, bool) {
+	val, ok := s.Load(key)
 	if !ok {
 		return nil, false
 	}
 
-	rcd := value.(*record)
+	rcd := val.(*record)
 	if rcd.isValid() {
-		return rcd, ok
+		return rcd.val, ok
 	}
 
 	s.Delete(key)
