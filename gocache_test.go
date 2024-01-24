@@ -4,21 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bouk/monkey"
 	"github.com/kpango/fastime"
 )
-
-var defaultNowTimeForTest = time.Date(2018, 11, 2, 0, 0, 0, 0, time.Local)
-
-func SetNowTime(t time.Time) {
-	monkey.Patch(time.Now, func() time.Time {
-		return t
-	})
-}
-
-func init() {
-	SetNowTime(defaultNowTimeForTest)
-}
 
 func TestNew(t *testing.T) {
 	g := New()
