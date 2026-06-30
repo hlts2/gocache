@@ -5,7 +5,6 @@ go 1.26.1
 require (
 	github.com/allegro/bigcache v1.2.1
 	github.com/bluele/gcache v0.0.2
-	github.com/cespare/xxhash v1.1.0
 	github.com/kpango/fastime v1.1.10
 	github.com/kpango/gache v1.2.8
 	github.com/patrickmn/go-cache v2.1.0+incompatible

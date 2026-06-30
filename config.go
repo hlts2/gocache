@@ -10,7 +10,7 @@ const (
 	DeleteExpiredInterval = int64(10 * time.Second)
 
 	// DefaultShardsCount is the number of elements of concurrent map.
-	DefaultShardsCount uint64 = 256
+	DefaultShardsCount uint64 = 512
 
 	s = 1 * time.Second
 )
