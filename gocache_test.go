@@ -1,6 +1,7 @@
 package gocache
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -14,38 +15,78 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestIsValid(t *testing.T) {
+func TestEntryExpire(t *testing.T) {
 	tests := []struct {
-		record   *record
+		expire   int64
 		expected bool
 	}{
 		{
-			record: &record{
-				expire: (fastime.Now().AddDate(1, 0, 0)).UnixNano(),
-			},
+			expire:   (fastime.Now().AddDate(1, 0, 0)).UnixNano(),
 			expected: true,
 		},
 		{
-			record: &record{
-				expire: (fastime.Now().AddDate(0, 0, 0)).UnixNano(),
-			},
+			expire:   (fastime.Now().AddDate(0, 0, 0)).UnixNano(),
 			expected: false,
 		},
 		{
-			record: &record{
-				expire: (fastime.Now().AddDate(-1, 0, 0)).UnixNano(),
-			},
+			expire:   (fastime.Now().AddDate(-1, 0, 0)).UnixNano(),
 			expected: false,
 		},
 	}
 
 	for i, test := range tests {
-		got := test.record.isValid()
+		g := New().(*gocache)
+		g.set("key", "val", test.expire-fastime.UnixNanoNow())
 
+		_, got := g.Get("key")
 		if test.expected != got {
-			t.Errorf("tests[%d] - value.isValid is wrong. expected: %v, got: %v", i, test.expected, got)
+			t.Errorf("tests[%d] - Get ok is wrong. expected: %v, got: %v", i, test.expected, got)
 		}
 	}
+}
+
+func TestConcurrent(t *testing.T) {
+	g := New()
+
+	var wg sync.WaitGroup
+	keys := []string{"key-1", "key-2", "key-3", "key-4"}
+
+	for i := 0; i < 8; i++ {
+		wg.Add(1)
+		go func(n int) {
+			defer wg.Done()
+			for j := 0; j < 10000; j++ {
+				k := keys[j%len(keys)]
+				g.Set(k, j)
+
+				if val, ok := g.Get(k); ok {
+					if _, isInt := val.(int); !isInt {
+						t.Errorf("Get returned unexpected type: %T", val)
+						return
+					}
+				}
+
+				switch j % 100 {
+				case 50:
+					g.Delete(k)
+				case 75:
+					g.SetWithExpire(k, j, time.Hour)
+				}
+			}
+		}(i)
+	}
+
+	for i := 0; i < 2; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for j := 0; j < 100; j++ {
+				g.(*gocache).DeleteExpired()
+			}
+		}()
+	}
+
+	wg.Wait()
 }
 
 func TestSet(t *testing.T) {
